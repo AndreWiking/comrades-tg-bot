@@ -1,0 +1,1 @@
+/Users/andrewiking/PhpstormProjects/VK_Wall_Parser/sql/create_tables.sql
