@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
 	"strconv"
@@ -14,7 +15,7 @@ const (
 )
 
 func ChangeKeyboard(bot *tgbotapi.BotAPI, chat_id int64, markup tgbotapi.ReplyKeyboardMarkup) {
-	msg := tgbotapi.NewMessage(chat_id, "Поиск ...")
+	msg := tgbotapi.NewMessage(chat_id, FindRoommateMText)
 	msg.ReplyMarkup = markup
 
 	if _, err := bot.Send(msg); err != nil {
@@ -23,6 +24,8 @@ func ChangeKeyboard(bot *tgbotapi.BotAPI, chat_id int64, markup tgbotapi.ReplyKe
 }
 
 func main() {
+	//gpt.Test()
+	//os.Exit(0)
 
 	var dbConnection DbConnection
 	if err := dbConnection.Connect(); err != nil {
@@ -38,10 +41,10 @@ func main() {
 
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
-	u := tgbotapi.NewUpdate(0)
-	u.Timeout = 60
+	newUpdate := tgbotapi.NewUpdate(0)
+	newUpdate.Timeout = 60
 
-	updates := bot.GetUpdatesChan(u)
+	updates := bot.GetUpdatesChan(newUpdate)
 
 	for update := range updates {
 		if update.Message == nil { // ignore non-Message updates
@@ -86,6 +89,7 @@ func main() {
 				log.Fatal(err)
 			}
 			msg.Text = text
+			msg.ReplyMarkup = editFromKeyKeyboard
 
 		case FindRoommateBText:
 			added, err := dbConnection.IsFormAdded(user.ID)
@@ -169,10 +173,17 @@ func main() {
 			}
 
 		default:
+			if state := DetectUserState(message); state != StateFormUnknown {
+				if err := dbConnection.SetUserState(user.ID, state-1); err != nil {
+					log.Fatal(err)
+				}
+			}
 			state, err := dbConnection.GetUserState(user.ID)
 			if err != nil {
 				log.Fatal(err)
 			}
+
+			fmt.Println(state)
 
 			switch state {
 			case StateMain:

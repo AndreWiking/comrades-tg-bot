@@ -35,7 +35,7 @@ const (
 	AboutUsAnswerText = "Мы предоставляем удобную платформу для тех, кто ищет товарища по квартире, чтобы совместно снять жилье и снизить расходы.\nНаша цель — помочь вам найти идеального сожителя, который соответствует вашим предпочтениям и образу жизни."
 
 	NoFormFilledMText = "Сначала необходимо заполнить"
-	FindRoommateMText = "Поиск кандидатов"
+	FindRoommateMText = "Поиск кандидатов ..."
 
 	MyFormPatternText = `Имя: <b>%s</b>
 Фамилия: <b>%s</b>
@@ -74,6 +74,24 @@ var matchKeyKeyboard = tgbotapi.NewReplyKeyboard(
 	),
 )
 
+var editFromKeyKeyboard = tgbotapi.NewReplyKeyboard(
+	tgbotapi.NewKeyboardButtonRow(
+		tgbotapi.NewKeyboardButton(StateFormFirstName.String()),
+		tgbotapi.NewKeyboardButton(StateFormLastName.String()),
+		tgbotapi.NewKeyboardButton(StateFormAge.String()),
+	),
+	tgbotapi.NewKeyboardButtonRow(
+		tgbotapi.NewKeyboardButton(StateFormSex.String()),
+		tgbotapi.NewKeyboardButton(StateFormRoommateSex.String()),
+		tgbotapi.NewKeyboardButton(StateFormApartmentsLocation.String()),
+	),
+	tgbotapi.NewKeyboardButtonRow(
+		tgbotapi.NewKeyboardButton(StateFormApartmentsBudget.String()),
+		tgbotapi.NewKeyboardButton(StateFormAboutUser.String()),
+		tgbotapi.NewKeyboardButton(StateFormAboutRoommate.String()),
+	),
+)
+
 func GetMatchInlineKeyboard(writeLink string, profileLink string) tgbotapi.InlineKeyboardMarkup {
 	return tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
@@ -86,9 +104,9 @@ func GetMatchInlineKeyboard(writeLink string, profileLink string) tgbotapi.Inlin
 type SexType int
 
 const (
-	SexUnknown SexType = 0
 	SexFemale  SexType = 1
 	SexMale    SexType = 2
+	SexUnknown SexType = 0
 )
 
 var SexTypeName = map[SexType]string{
@@ -127,4 +145,30 @@ const (
 	StateFormApartmentsLocation
 	StateFormAboutUser
 	StateFormAboutRoommate
+	StateFormUnknown UserState = -1
 )
+
+var UserStateName = map[UserState]string{
+	StateFormFirstName:          "Имя",
+	StateFormLastName:           "Фамилия",
+	StateFormAge:                "Возраст",
+	StateFormSex:                "Пол",
+	StateFormRoommateSex:        "Пол соседа",
+	StateFormApartmentsLocation: "Локация квартиры",
+	StateFormApartmentsBudget:   "Бюджет",
+	StateFormAboutUser:          "О себе",
+	StateFormAboutRoommate:      "О соседе",
+}
+
+func (ss UserState) String() string {
+	return UserStateName[ss]
+}
+
+func DetectUserState(name string) UserState {
+	for s, n := range UserStateName {
+		if n == name {
+			return s
+		}
+	}
+	return StateFormUnknown
+}
