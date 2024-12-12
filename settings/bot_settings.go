@@ -1,4 +1,4 @@
-package main
+package settings
 
 import tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
@@ -53,7 +53,7 @@ const (
 `
 )
 
-var mainKeyKeyboard = tgbotapi.NewReplyKeyboard(
+var MainKeyKeyboard = tgbotapi.NewReplyKeyboard(
 	tgbotapi.NewKeyboardButtonRow(
 		tgbotapi.NewKeyboardButton(FindRoommateBText),
 		tgbotapi.NewKeyboardButton(FillFormBText),
@@ -64,7 +64,7 @@ var mainKeyKeyboard = tgbotapi.NewReplyKeyboard(
 	),
 )
 
-var matchKeyKeyboard = tgbotapi.NewReplyKeyboard(
+var MatchKeyKeyboard = tgbotapi.NewReplyKeyboard(
 	tgbotapi.NewKeyboardButtonRow(
 		tgbotapi.NewKeyboardButton(PrevBText),
 		tgbotapi.NewKeyboardButton(NextBText),
@@ -74,7 +74,7 @@ var matchKeyKeyboard = tgbotapi.NewReplyKeyboard(
 	),
 )
 
-var editFromKeyKeyboard = tgbotapi.NewReplyKeyboard(
+var EditFromKeyKeyboard = tgbotapi.NewReplyKeyboard(
 	tgbotapi.NewKeyboardButtonRow(
 		tgbotapi.NewKeyboardButton(StateFormFirstName.String()),
 		tgbotapi.NewKeyboardButton(StateFormLastName.String()),
@@ -114,7 +114,7 @@ var SexTypeName = map[SexType]string{
 	SexMale:   "Мужской",
 }
 
-var sexKeyKeyboard = tgbotapi.NewReplyKeyboard(
+var SexKeyKeyboard = tgbotapi.NewReplyKeyboard(
 	tgbotapi.NewKeyboardButtonRow(
 		tgbotapi.NewKeyboardButton(SexTypeName[SexMale]),
 		tgbotapi.NewKeyboardButton(SexTypeName[SexFemale]),

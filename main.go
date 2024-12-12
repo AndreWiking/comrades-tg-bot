@@ -1,6 +1,8 @@
 package main
 
 import (
+	"ComradesTG/db"
+	"ComradesTG/settings"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
@@ -15,7 +17,7 @@ const (
 )
 
 func ChangeKeyboard(bot *tgbotapi.BotAPI, chat_id int64, markup tgbotapi.ReplyKeyboardMarkup) {
-	msg := tgbotapi.NewMessage(chat_id, FindRoommateMText)
+	msg := tgbotapi.NewMessage(chat_id, settings.FindRoommateMText)
 	msg.ReplyMarkup = markup
 
 	if _, err := bot.Send(msg); err != nil {
@@ -27,12 +29,12 @@ func main() {
 	//gpt.Test()
 	//os.Exit(0)
 
-	var dbConnection DbConnection
+	var dbConnection db.Connection
 	if err := dbConnection.Connect(); err != nil {
 		log.Fatal(err)
 	}
 
-	bot, err := tgbotapi.NewBotAPI(TgApiKey)
+	bot, err := tgbotapi.NewBotAPI(settings.TgApiKey)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -64,34 +66,34 @@ func main() {
 
 		switch message {
 		case "/start":
-			msg.Text = StartMessage
-			msg.ReplyMarkup = mainKeyKeyboard
+			msg.Text = settings.StartMessage
+			msg.ReplyMarkup = settings.MainKeyKeyboard
 			if err := dbConnection.AddUser(user.ID, user.UserName, user.FirstName, user.LastName); err != nil {
 				log.Fatal(err)
 			}
-			if err := dbConnection.SetUserState(user.ID, StateMain); err != nil {
+			if err := dbConnection.SetUserState(user.ID, settings.StateMain); err != nil {
 				log.Fatal(err)
 			}
-		case FillFormBText:
-			msg.Text = EnterNameMText
+		case settings.FillFormBText:
+			msg.Text = settings.EnterNameMText
 			msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
 			if err := dbConnection.AddForm(user.ID); err != nil {
 				log.Fatal(err)
 			}
-			if err := dbConnection.SetUserState(user.ID, StateFormFirstName); err != nil {
+			if err := dbConnection.SetUserState(user.ID, settings.StateFormFirstName); err != nil {
 				log.Fatal(err)
 			}
-		case AboutUsBText:
-			msg.Text = AboutUsAnswerText
-		case MyFormBText:
+		case settings.AboutUsBText:
+			msg.Text = settings.AboutUsAnswerText
+		case settings.MyFormBText:
 			text, err := dbConnection.GetFormText(user.ID)
 			if err != nil {
 				log.Fatal(err)
 			}
 			msg.Text = text
-			msg.ReplyMarkup = editFromKeyKeyboard
+			msg.ReplyMarkup = settings.EditFromKeyKeyboard
 
-		case FindRoommateBText:
+		case settings.FindRoommateBText:
 			added, err := dbConnection.IsFormAdded(user.ID)
 			if err != nil {
 				log.Fatal(err)
@@ -107,17 +109,17 @@ func main() {
 				}
 
 				sendType = TypePhoto
-				url := tgbotapi.NewInputMediaPhoto(tgbotapi.FileURL(userVK.photo_link))
+				url := tgbotapi.NewInputMediaPhoto(tgbotapi.FileURL(userVK.Photo_link))
 				photo = tgbotapi.NewPhoto(update.Message.From.ID, url.Media)
-				photo.Caption = PrintVkUserForm(userVK)
-				photo.ReplyMarkup = GetMatchInlineKeyboard(userVK.profile_link, userVK.post_link)
-				ChangeKeyboard(bot, chat_id, matchKeyKeyboard)
+				photo.Caption = db.PrintVkUserForm(userVK)
+				photo.ReplyMarkup = settings.GetMatchInlineKeyboard(userVK.Profile_link, userVK.Post_link)
+				ChangeKeyboard(bot, chat_id, settings.MatchKeyKeyboard)
 
 			} else {
-				msg.Text = NoFormFilledMText
+				msg.Text = settings.NoFormFilledMText
 			}
 
-		case NextBText:
+		case settings.NextBText:
 			matchPos, err := dbConnection.GetUserMatchPos(user.ID)
 			if err != nil {
 				log.Fatal(err)
@@ -133,13 +135,13 @@ func main() {
 			}
 
 			sendType = TypePhoto
-			url := tgbotapi.NewInputMediaPhoto(tgbotapi.FileURL(userVK.photo_link))
+			url := tgbotapi.NewInputMediaPhoto(tgbotapi.FileURL(userVK.Photo_link))
 			photo = tgbotapi.NewPhoto(update.Message.From.ID, url.Media)
-			photo.Caption = PrintVkUserForm(userVK)
-			photo.ReplyMarkup = GetMatchInlineKeyboard(userVK.profile_link, userVK.post_link)
+			photo.Caption = db.PrintVkUserForm(userVK)
+			photo.ReplyMarkup = settings.GetMatchInlineKeyboard(userVK.Profile_link, userVK.Post_link)
 			//ChangeKeyboard(bot, chat_id, matchKeyKeyboard)
 
-		case PrevBText:
+		case settings.PrevBText:
 			matchPos, err := dbConnection.GetUserMatchPos(user.ID)
 			if err != nil {
 				log.Fatal(err)
@@ -158,22 +160,22 @@ func main() {
 			}
 
 			sendType = TypePhoto
-			url := tgbotapi.NewInputMediaPhoto(tgbotapi.FileURL(userVK.photo_link))
+			url := tgbotapi.NewInputMediaPhoto(tgbotapi.FileURL(userVK.Photo_link))
 			photo = tgbotapi.NewPhoto(update.Message.From.ID, url.Media)
-			photo.Caption = PrintVkUserForm(userVK)
-			photo.ReplyMarkup = GetMatchInlineKeyboard(userVK.profile_link, userVK.post_link)
+			photo.Caption = db.PrintVkUserForm(userVK)
+			photo.ReplyMarkup = settings.GetMatchInlineKeyboard(userVK.Profile_link, userVK.Post_link)
 			//ChangeKeyboard(bot, chat_id, matchKeyKeyboard)
 
-		case MenuBText:
+		case settings.MenuBText:
 
-			msg.Text = StartMessage
-			msg.ReplyMarkup = mainKeyKeyboard
-			if err := dbConnection.SetUserState(user.ID, StateMain); err != nil {
+			msg.Text = settings.StartMessage
+			msg.ReplyMarkup = settings.MainKeyKeyboard
+			if err := dbConnection.SetUserState(user.ID, settings.StateMain); err != nil {
 				log.Fatal(err)
 			}
 
 		default:
-			if state := DetectUserState(message); state != StateFormUnknown {
+			if state := settings.DetectUserState(message); state != settings.StateFormUnknown {
 				if err := dbConnection.SetUserState(user.ID, state-1); err != nil {
 					log.Fatal(err)
 				}
@@ -186,117 +188,117 @@ func main() {
 			fmt.Println(state)
 
 			switch state {
-			case StateMain:
-			case StateFormFirstName:
+			case settings.StateMain:
+			case settings.StateFormFirstName:
 				if err := dbConnection.SetFormValue(user.ID, "first_name", message); err != nil {
 					log.Fatal(err)
 				}
-				if err := dbConnection.SetUserState(user.ID, StateFormLastName); err != nil {
+				if err := dbConnection.SetUserState(user.ID, settings.StateFormLastName); err != nil {
 					log.Fatal(err)
 				}
-				msg.Text = EnterLastnameMText
+				msg.Text = settings.EnterLastnameMText
 
-			case StateFormLastName:
+			case settings.StateFormLastName:
 				if err := dbConnection.SetFormValue(user.ID, "last_name", message); err != nil {
 					log.Fatal(err)
 				}
-				if err := dbConnection.SetUserState(user.ID, StateFormSex); err != nil {
+				if err := dbConnection.SetUserState(user.ID, settings.StateFormSex); err != nil {
 					log.Fatal(err)
 				}
-				msg.Text = EnterSexMText
-				msg.ReplyMarkup = sexKeyKeyboard
+				msg.Text = settings.EnterSexMText
+				msg.ReplyMarkup = settings.SexKeyKeyboard
 
-			case StateFormSex:
-				sexType := DetectSex(message)
-				if sexType == SexUnknown {
-					msg.Text = EnterIncorrectFormatText
+			case settings.StateFormSex:
+				sexType := settings.DetectSex(message)
+				if sexType == settings.SexUnknown {
+					msg.Text = settings.EnterIncorrectFormatText
 
 				} else {
 					if err := dbConnection.SetFormValue(user.ID, "sex", strconv.Itoa(int(sexType))); err != nil {
 						log.Fatal(err)
 					}
-					if err := dbConnection.SetUserState(user.ID, StateFormAge); err != nil {
+					if err := dbConnection.SetUserState(user.ID, settings.StateFormAge); err != nil {
 						log.Fatal(err)
 					}
-					msg.Text = EnterAgeMText
+					msg.Text = settings.EnterAgeMText
 					msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
 				}
 
-			case StateFormAge:
+			case settings.StateFormAge:
 				age, err := strconv.Atoi(message)
 				if err != nil {
-					msg.Text = EnterIncorrectFormatText
+					msg.Text = settings.EnterIncorrectFormatText
 				} else {
 
 					if err := dbConnection.SetFormValue(user.ID, "age", strconv.Itoa(age)); err != nil {
 						log.Fatal(err)
 					}
-					if err := dbConnection.SetUserState(user.ID, StateFormRoommateSex); err != nil {
+					if err := dbConnection.SetUserState(user.ID, settings.StateFormRoommateSex); err != nil {
 						log.Fatal(err)
 					}
-					msg.Text = EnterRoommateSexMText
-					msg.ReplyMarkup = sexKeyKeyboard
+					msg.Text = settings.EnterRoommateSexMText
+					msg.ReplyMarkup = settings.SexKeyKeyboard
 				}
 
-			case StateFormRoommateSex:
-				sexType := DetectSex(message)
-				if sexType == SexUnknown {
-					msg.Text = EnterIncorrectFormatText
+			case settings.StateFormRoommateSex:
+				sexType := settings.DetectSex(message)
+				if sexType == settings.SexUnknown {
+					msg.Text = settings.EnterIncorrectFormatText
 
 				} else {
 					if err := dbConnection.SetFormValue(user.ID, "roommate_sex", strconv.Itoa(int(sexType))); err != nil {
 						log.Fatal(err)
 					}
-					if err := dbConnection.SetUserState(user.ID, StateFormApartmentsBudget); err != nil {
+					if err := dbConnection.SetUserState(user.ID, settings.StateFormApartmentsBudget); err != nil {
 						log.Fatal(err)
 					}
-					msg.Text = EnterApartmentBudgetMText
+					msg.Text = settings.EnterApartmentBudgetMText
 					msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
 				}
 
-			case StateFormApartmentsBudget:
+			case settings.StateFormApartmentsBudget:
 				budget, err := strconv.Atoi(message)
 				if err != nil {
-					msg.Text = EnterIncorrectFormatText
+					msg.Text = settings.EnterIncorrectFormatText
 
 				} else {
 
 					if err := dbConnection.SetFormValue(user.ID, "apartments_budget", strconv.Itoa(budget)); err != nil {
 						log.Fatal(err)
 					}
-					if err := dbConnection.SetUserState(user.ID, StateFormApartmentsLocation); err != nil {
+					if err := dbConnection.SetUserState(user.ID, settings.StateFormApartmentsLocation); err != nil {
 						log.Fatal(err)
 					}
-					msg.Text = EnterApartmentLocationMText
+					msg.Text = settings.EnterApartmentLocationMText
 				}
 
-			case StateFormApartmentsLocation:
+			case settings.StateFormApartmentsLocation:
 				if err := dbConnection.SetFormValue(user.ID, "apartments_location", message); err != nil {
 					log.Fatal(err)
 				}
-				if err := dbConnection.SetUserState(user.ID, StateFormAboutUser); err != nil {
+				if err := dbConnection.SetUserState(user.ID, settings.StateFormAboutUser); err != nil {
 					log.Fatal(err)
 				}
-				msg.Text = EnterAboutYouMText
+				msg.Text = settings.EnterAboutYouMText
 
-			case StateFormAboutUser:
+			case settings.StateFormAboutUser:
 				if err := dbConnection.SetFormValue(user.ID, "about_user", message); err != nil {
 					log.Fatal(err)
 				}
-				if err := dbConnection.SetUserState(user.ID, StateFormAboutRoommate); err != nil {
+				if err := dbConnection.SetUserState(user.ID, settings.StateFormAboutRoommate); err != nil {
 					log.Fatal(err)
 				}
-				msg.Text = EnterAboutRoommateMText
+				msg.Text = settings.EnterAboutRoommateMText
 
-			case StateFormAboutRoommate:
+			case settings.StateFormAboutRoommate:
 				if err := dbConnection.SetFormValue(user.ID, "about_roommate", message); err != nil {
 					log.Fatal(err)
 				}
-				if err := dbConnection.SetUserState(user.ID, StateMain); err != nil {
+				if err := dbConnection.SetUserState(user.ID, settings.StateMain); err != nil {
 					log.Fatal(err)
 				}
-				msg.Text = EnterSuccessFilledMText
-				msg.ReplyMarkup = mainKeyKeyboard
+				msg.Text = settings.EnterSuccessFilledMText
+				msg.ReplyMarkup = settings.MainKeyKeyboard
 			}
 		}
 
