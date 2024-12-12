@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
 
 	_ "github.com/lib/pq"
 )
@@ -226,28 +227,34 @@ func (connection *Connection) SetFormValue(user_id int64, column string, value s
 }
 
 type FormTgUser struct {
-	first_name          string
-	last_name           string
-	sex                 settings.SexType
-	age                 int
-	roommate_sex        settings.SexType
-	apartments_budget   int
-	apartments_location string
-	about_user          string
-	about_roommate      string
+	first_name            string
+	last_name             string
+	Sex                   settings.SexType
+	age                   int
+	Roommate_sex          settings.SexType
+	Apartments_budget     int
+	Apartments_location   string
+	Apartments_location_s float64
+	Apartments_location_w float64
+	about_user            string
+	about_roommate        string
+	Match_budget          int
+	Match_distance        float64
 }
 
 func (connection *Connection) GetForm(user_id int64) (FormTgUser, error) {
 	stmt, err := connection.db.Prepare(
-		"SELECT first_name, last_name, sex, age, roommate_sex, apartments_budget, apartments_location, about_user, about_roommate FROM tg_form WHERE user_id = $1")
+		`SELECT first_name, last_name, sex, age, roommate_sex, apartments_budget, apartments_location,
+       apartments_location_s, apartments_location_w, about_user, about_roommate, match_budget, match_distance FROM tg_form WHERE user_id = $1`)
 	var form FormTgUser
 	if err != nil {
 		return form, err
 	}
 	defer stmt.Close()
 
-	err = stmt.QueryRow(user_id).Scan(&form.first_name, &form.last_name, &form.sex, &form.age, &form.roommate_sex,
-		&form.apartments_budget, &form.apartments_location, &form.about_user, &form.about_roommate)
+	err = stmt.QueryRow(user_id).Scan(&form.first_name, &form.last_name, &form.Sex, &form.age, &form.Roommate_sex,
+		&form.Apartments_budget, &form.Apartments_location, &form.Apartments_location_s, &form.Apartments_location_w,
+		&form.about_user, &form.about_roommate, &form.Match_budget, &form.Match_distance)
 
 	return form, err
 }
@@ -258,17 +265,18 @@ func (connection *Connection) GetFormText(user_id int64) (string, error) {
 	if err != nil {
 		return "", err
 	} else {
-		return fmt.Sprintf(settings.MyFormPatternText, form.first_name, form.last_name, settings.SexTypeName[form.sex], form.age,
-			settings.SexTypeName[form.roommate_sex], form.apartments_budget, form.apartments_location, form.about_user,
+		return fmt.Sprintf(settings.MyFormPatternText, form.first_name, form.last_name, settings.SexTypeName[form.Sex],
+			form.age, settings.SexTypeName[form.Roommate_sex], form.Apartments_budget, form.Match_budget,
+			form.Apartments_location, form.Match_distance, form.about_user,
 			form.about_roommate), err
 	}
 }
 
 type UserVK struct {
-	vk_id             int
+	Vk_id             int
 	fist_name         string
 	last_name         string
-	sex               settings.SexType
+	Sex               settings.SexType
 	age               int
 	Photo_link        string
 	Post_link         string
@@ -277,7 +285,13 @@ type UserVK struct {
 }
 
 func PrintVkUserForm(user UserVK) string {
-	return fmt.Sprintf(settings.VkFormPatternText, user.fist_name, user.last_name, user.age, user.apartments_budget)
+	var age string
+	if user.age == 0 {
+		age = "—"
+	} else {
+		age = strconv.Itoa(user.age)
+	}
+	return fmt.Sprintf(settings.VkFormPatternText, user.fist_name, user.last_name, age, user.apartments_budget)
 }
 
 func (connection *Connection) GetLinkVkUserPost(vk_user_id int) (string, error) {
@@ -296,19 +310,10 @@ func (connection *Connection) GetLinkVkUserPost(vk_user_id int) (string, error) 
 	}
 }
 
-func (connection *Connection) GetMatchVkUser(user_id int64, matchPos int) (UserVK, error) {
+func (connection *Connection) GetMatchVkUser(tgUserId int64, matchPos int) (UserVK, error) {
 
 	var userVK UserVK
-
-	user_id = testID
-
-	stmt, err := connection.db.Prepare(`
-SELECT user_id, first_name, last_name, sex, age, photo_link, profile_link, apartments_budget
-FROM VK_Match
-         INNER JOIN VK_Users ON VK_Match.user2_id = VK_Users.id
-         INNER JOIN VK_Post ON VK_Match.user2_id = VK_Post.user_id
-WHERE user1_id = $1
-`)
+	stmt, err := connection.db.Prepare(`select vk_user_id from tg_match where tg_user_id = $1`)
 
 	if err != nil {
 		return userVK, err
@@ -316,28 +321,57 @@ WHERE user1_id = $1
 
 	defer stmt.Close()
 
-	rows, err := stmt.Query(user_id)
+	rows, err := stmt.Query(tgUserId)
 	if err != nil {
 		return userVK, err
 	}
+	var vkUserId int
 	for i := 0; i <= matchPos && rows.Next(); i++ {
-		if err := rows.Scan(&userVK.vk_id, &userVK.fist_name, &userVK.last_name, &userVK.sex, &userVK.age, &userVK.Photo_link,
-			&userVK.Profile_link, &userVK.apartments_budget); err != nil {
+		if err := rows.Scan(&vkUserId); err != nil {
 			return userVK, err
 		}
 	}
 
-	userVK.Post_link, err = connection.GetLinkVkUserPost(userVK.vk_id)
+	userVK, err = connection.GetVkUser(vkUserId)
+	if err != nil {
+		return userVK, err
+	}
+	post, err := connection.GetVkUserPost(vkUserId)
+	if err != nil {
+		return userVK, err
+	}
+	userVK.apartments_budget = post.Apartments_budget
+	userVK.Post_link = post.Link
 
 	return userVK, err
 }
 
 type PostVK struct {
-	user_id               int
-	apartments_budget     int
-	apartments_location_s float32
-	apartments_location_w float32
-	roommate_sex          settings.SexType
+	User_id               int
+	Apartments_budget     int
+	Apartments_location_s float64
+	Apartments_location_w float64
+	Roommate_sex          settings.SexType
+	Link                  string
+}
+
+func (connection *Connection) GetVkUserPost(user_id int) (PostVK, error) {
+
+	var post PostVK
+
+	stmt, err := connection.db.Prepare(`
+SELECT user_id, apartments_budget, apartments_location_s, apartments_location_w, roommate_sex, link FROM VK_Post WHERE user_id = $1`)
+
+	if err != nil {
+		return post, err
+	}
+
+	defer stmt.Close()
+
+	err = stmt.QueryRow(user_id).Scan(&post.User_id, &post.Apartments_budget, &post.Apartments_location_s,
+		&post.Apartments_location_w, &post.Roommate_sex, &post.Link)
+
+	return post, err
 }
 
 func (connection *Connection) GetAllVkPosts() ([]PostVK, error) {
@@ -353,11 +387,66 @@ func (connection *Connection) GetAllVkPosts() ([]PostVK, error) {
 
 	for rows.Next() {
 		var post PostVK
-		if err := rows.Scan(&post.user_id, &post.apartments_budget, &post.apartments_location_s,
-			&post.apartments_location_w, &post.roommate_sex); err != nil {
+		if err := rows.Scan(&post.User_id, &post.Apartments_budget, &post.Apartments_location_s,
+			&post.Apartments_location_w, &post.Roommate_sex); err != nil {
 			return posts, err
 		}
 		posts = append(posts, post)
 	}
 	return posts, nil
+}
+
+func (connection *Connection) GetVkUser(user_id int) (UserVK, error) {
+
+	var userVK UserVK
+
+	stmt, err := connection.db.Prepare(`
+SELECT first_name, last_name, Sex, age, photo_link, profile_link FROM vk_users WHERE id = $1`)
+
+	if err != nil {
+		return userVK, err
+	}
+
+	defer stmt.Close()
+
+	err = stmt.QueryRow(user_id).Scan(&userVK.fist_name, &userVK.last_name, &userVK.Sex,
+		&userVK.age, &userVK.Photo_link, &userVK.Profile_link)
+
+	return userVK, err
+}
+
+func (connection *Connection) AddTgMatch(tg_user_id int64, vk_user_id int) error {
+
+	stmt, err := connection.db.Prepare(
+		"INSERT INTO tg_match(tg_user_id, vk_user_id) VALUES($1, $2)")
+	if err != nil {
+		return err
+	}
+
+	defer stmt.Close()
+
+	if _, err := stmt.Exec(tg_user_id, vk_user_id); err != nil {
+		return err
+	}
+
+	fmt.Printf("Tg match %d - %d added\n", tg_user_id, vk_user_id)
+
+	return nil
+}
+
+func (connection *Connection) DeleteTgMatch(tg_user_id int64) error {
+
+	stmt, err := connection.db.Prepare(
+		"DELETE FROM tg_match WHERE tg_user_id = $1")
+	if err != nil {
+		return err
+	}
+
+	defer stmt.Close()
+
+	if _, err := stmt.Exec(tg_user_id); err != nil {
+		return err
+	}
+
+	return nil
 }

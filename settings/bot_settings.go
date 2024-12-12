@@ -19,6 +19,9 @@ const (
 	WriteIBText = "Написать"
 	MoreIBText  = "Подробнее"
 
+	MatchDistanceBText = "Расстояние поиска"
+	MatchBudgetBText   = "Вилка бюджета"
+
 	EnterNameMText              = "Введите ваше имя:"
 	EnterLastnameMText          = "Ваша фамилия:"
 	EnterAgeMText               = "Сколько вам лет?"
@@ -30,11 +33,18 @@ const (
 	EnterAboutRoommateMText     = "Какие у вас пожелания по соседу?"
 	EnterSuccessFilledMText     = "Анкета успешно заполнена! Можете приступать к поиску соседа."
 
+	EnterMatchDistanceSuccessBText = "Расстояние успешно изменено! Можете приступать к поиску соседа."
+	EnterMatchBudgetSuccessBText   = "Разница в бюджете успешно изменена! Можете приступать к поиску соседа."
+
+	EnterMatchDistanceBText = "Введите приемлемое для вас расстояние(в км)\n\n%s ± __км"
+	EnterMatchBudgetBText   = "Введите приемлемую для вас разницу в бюджете(в ₽)\n\n%d₽ ± __₽"
+
 	EnterIncorrectFormatText = "Неверный формат, попробуйте ещё раз:"
 
 	AboutUsAnswerText = "Мы предоставляем удобную платформу для тех, кто ищет товарища по квартире, чтобы совместно снять жилье и снизить расходы.\nНаша цель — помочь вам найти идеального сожителя, который соответствует вашим предпочтениям и образу жизни."
 
-	NoFormFilledMText = "Сначала необходимо заполнить"
+	NoFormFilledMText = "Сначала необходимо заполнить анкету"
+	NoMatchFound      = "К сожалению, не нашлось ни одного кандидата"
 	FindRoommateMText = "Поиск кандидатов ..."
 
 	MyFormPatternText = `Имя: <b>%s</b>
@@ -42,13 +52,13 @@ const (
 Пол: <b>%s</b>
 Возраст: <b>%d</b>
 Пол соседа: <b>%s</b>
-Бюджет: <b>%d₽</b>
-Локация квартиры: <b>%s</b>
+Бюджет: <b>%d₽</b> ± %d₽
+Локация квартиры: <b>%s</b> ± %.1fкм
 О себе: <b>%s</b>
 Пожелания по соседу: <b>%s</b>`
 
 	VkFormPatternText = `<b>%s %s</b>
-Возраст: <b>%d</b>
+Возраст: <b>%s</b>
 Бюджет на квартиру: <b>%d₽</b>
 `
 )
@@ -68,6 +78,16 @@ var MatchKeyKeyboard = tgbotapi.NewReplyKeyboard(
 	tgbotapi.NewKeyboardButtonRow(
 		tgbotapi.NewKeyboardButton(PrevBText),
 		tgbotapi.NewKeyboardButton(NextBText),
+	),
+	tgbotapi.NewKeyboardButtonRow(
+		tgbotapi.NewKeyboardButton(MenuBText),
+	),
+)
+
+var MatchParamsKeyKeyboard = tgbotapi.NewReplyKeyboard(
+	tgbotapi.NewKeyboardButtonRow(
+		tgbotapi.NewKeyboardButton(MatchBudgetBText),
+		tgbotapi.NewKeyboardButton(MatchDistanceBText),
 	),
 	tgbotapi.NewKeyboardButtonRow(
 		tgbotapi.NewKeyboardButton(MenuBText),
@@ -145,6 +165,8 @@ const (
 	StateFormApartmentsLocation
 	StateFormAboutUser
 	StateFormAboutRoommate
+	StateMatchDistance
+	StateMatchBudget
 	StateFormUnknown UserState = -1
 )
 

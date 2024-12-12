@@ -12,26 +12,31 @@ CREATE TABLE TG_Users
 DROP TABLE IF EXISTS TG_Form CASCADE;
 CREATE TABLE TG_Form
 (
-    id                  SERIAL PRIMARY KEY,
-    user_id             INT REFERENCES TG_Users (id) UNIQUE,
-    first_name          VARCHAR(128),
-    last_name           VARCHAR(128),
-    sex                 INT,
-    age                 INT,
-    roommate_sex        INT,
-    apartments_budget   INTEGER,
-    apartments_location VARCHAR(1024),
-    about_user          TEXT,
-    about_roommate      TEXT,
-    date                TIMESTAMP
+    id                    SERIAL PRIMARY KEY,
+    user_id               INT REFERENCES TG_Users (id) UNIQUE,
+    first_name            VARCHAR(128),
+    last_name             VARCHAR(128),
+    sex                   INT,
+    age                   INT,
+    roommate_sex          INT,
+    apartments_budget     INTEGER,
+    apartments_location   VARCHAR(1024),
+    apartments_location_s FLOAT,
+    apartments_location_w FLOAT,
+    about_user            TEXT,
+    about_roommate        TEXT,
+    date                  TIMESTAMP,
+    match_budget          FLOAT DEFAULT 5000,
+    match_distance        FLOAT DEFAULT 2.0
 );
 
 DROP TABLE IF EXISTS TG_Match CASCADE;
 CREATE TABLE TG_Match
 (
-    id         SERIAL PRIMARY KEY,
+    id         SERIAL,
     tg_user_id BIGINT REFERENCES TG_Users (id),
-    vk_user_id INT REFERENCES VK_Users (id)
+    vk_user_id INT REFERENCES VK_Users (id),
+    PRIMARY KEY (tg_user_id, vk_user_id)
 );
 
 select first_name, last_name, sex, age, photo_link, profile_link, apartments_budget
