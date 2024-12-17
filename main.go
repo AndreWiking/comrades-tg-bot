@@ -70,16 +70,24 @@ func main() {
 		user := update.Message.From
 		message := update.Message.Text
 
+		//fmt.Println(update.Message.Invoice.StartParameter)
+		fmt.Println(update.Message.Text)
+
 		switch message {
-		case "/start":
+		case settings.StartText + " " + settings.UtmYa1.String():
 			msg.Text = settings.StartMessage
 			msg.ReplyMarkup = settings.MainKeyKeyboard
-			if err := dbConnection.AddUser(user.ID, user.UserName, user.FirstName, user.LastName); err != nil {
+			if err := dbConnection.AddUser(user.ID, user.UserName, user.FirstName, user.LastName, settings.UtmYa1); err != nil {
 				log.Println(err)
 			}
-			if err := dbConnection.SetUserState(user.ID, settings.StateMain); err != nil {
+
+		case settings.StartText:
+			msg.Text = settings.StartMessage
+			msg.ReplyMarkup = settings.MainKeyKeyboard
+			if err := dbConnection.AddUser(user.ID, user.UserName, user.FirstName, user.LastName, settings.UtmEmpty); err != nil {
 				log.Println(err)
 			}
+
 		case settings.FillFormBText:
 			msg.Text = settings.EnterNameMText
 			msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
@@ -237,23 +245,31 @@ func main() {
 			switch state {
 			case settings.StateMain:
 			case settings.StateFormFirstName:
-				if err := dbConnection.SetFormValue(user.ID, "first_name", message); err != nil {
-					log.Println(err)
+				if len(message) <= settings.LimitEnterNamesLen {
+					if err := dbConnection.SetFormValue(user.ID, "first_name", message); err != nil {
+						log.Println(err)
+					}
+					if err := dbConnection.SetUserState(user.ID, settings.StateFormLastName); err != nil {
+						log.Println(err)
+					}
+					msg.Text = settings.EnterLastnameMText
+				} else {
+					msg.Text = settings.EnterIncorrectFormatText
 				}
-				if err := dbConnection.SetUserState(user.ID, settings.StateFormLastName); err != nil {
-					log.Println(err)
-				}
-				msg.Text = settings.EnterLastnameMText
 
 			case settings.StateFormLastName:
-				if err := dbConnection.SetFormValue(user.ID, "last_name", message); err != nil {
-					log.Println(err)
+				if len(message) <= settings.LimitEnterNamesLen {
+					if err := dbConnection.SetFormValue(user.ID, "last_name", message); err != nil {
+						log.Println(err)
+					}
+					if err := dbConnection.SetUserState(user.ID, settings.StateFormSex); err != nil {
+						log.Println(err)
+					}
+					msg.Text = settings.EnterSexMText
+					msg.ReplyMarkup = settings.SexKeyKeyboard
+				} else {
+					msg.Text = settings.EnterIncorrectFormatText
 				}
-				if err := dbConnection.SetUserState(user.ID, settings.StateFormSex); err != nil {
-					log.Println(err)
-				}
-				msg.Text = settings.EnterSexMText
-				msg.ReplyMarkup = settings.SexKeyKeyboard
 
 			case settings.StateFormSex:
 				sexType := settings.DetectSex(message)
@@ -273,7 +289,7 @@ func main() {
 
 			case settings.StateFormAge:
 				age, err := strconv.Atoi(message)
-				if err != nil {
+				if err != nil || age < 0 || age > 99 {
 					msg.Text = settings.EnterIncorrectFormatText
 				} else {
 
@@ -305,7 +321,7 @@ func main() {
 
 			case settings.StateFormApartmentsBudget:
 				budget, err := strconv.Atoi(message)
-				if err != nil {
+				if err != nil || budget < 0 || budget > settings.LimitBudget {
 					msg.Text = settings.EnterIncorrectFormatText
 
 				} else {
@@ -322,7 +338,7 @@ func main() {
 			case settings.StateFormApartmentsLocation:
 
 				locS, locW, err := gpt.TransformLocation(message)
-				if err != nil {
+				if err != nil || len(message) > settings.LimitEnterTextLen {
 					msg.Text = settings.EnterIncorrectFormatText
 				} else {
 
@@ -348,23 +364,31 @@ func main() {
 				}
 
 			case settings.StateFormAboutUser:
-				if err := dbConnection.SetFormValue(user.ID, "about_user", message); err != nil {
-					log.Println(err)
+				if len(message) < settings.LimitEnterTextLen {
+					if err := dbConnection.SetFormValue(user.ID, "about_user", message); err != nil {
+						log.Println(err)
+					}
+					if err := dbConnection.SetUserState(user.ID, settings.StateFormAboutRoommate); err != nil {
+						log.Println(err)
+					}
+					msg.Text = settings.EnterAboutRoommateMText
+				} else {
+					msg.Text = settings.EnterIncorrectFormatText
 				}
-				if err := dbConnection.SetUserState(user.ID, settings.StateFormAboutRoommate); err != nil {
-					log.Println(err)
-				}
-				msg.Text = settings.EnterAboutRoommateMText
 
 			case settings.StateFormAboutRoommate:
-				if err := dbConnection.SetFormValue(user.ID, "about_roommate", message); err != nil {
-					log.Println(err)
+				if len(message) < settings.LimitEnterTextLen {
+					if err := dbConnection.SetFormValue(user.ID, "about_roommate", message); err != nil {
+						log.Println(err)
+					}
+					if err := dbConnection.SetUserState(user.ID, settings.StateMain); err != nil {
+						log.Println(err)
+					}
+					msg.Text = settings.EnterSuccessFilledMText
+					msg.ReplyMarkup = settings.MainKeyKeyboard
+				} else {
+					msg.Text = settings.EnterIncorrectFormatText
 				}
-				if err := dbConnection.SetUserState(user.ID, settings.StateMain); err != nil {
-					log.Println(err)
-				}
-				msg.Text = settings.EnterSuccessFilledMText
-				msg.ReplyMarkup = settings.MainKeyKeyboard
 
 			case settings.StateMatchDistance:
 
@@ -382,7 +406,7 @@ func main() {
 			case settings.StateMatchBudget:
 
 				budget, err := strconv.Atoi(message)
-				if err != nil || budget < 0 || budget > settings.LimitMatchBudget {
+				if err != nil || budget < 0 || budget > settings.LimitBudget {
 					msg.Text = settings.EnterIncorrectFormatText
 				} else {
 					if err := dbConnection.SetFormValue(user.ID, "match_budget", strconv.Itoa(budget)); err != nil {
@@ -419,6 +443,9 @@ sudo systemctl restart nginx
 7541929739:AAFylnUcAeDvSueJGIGQ5kAfow4nEw7P-Oc
 
 scp -r /Users/andrewiking/GolandProjects/ComradesTG root@46.17.41.227:/root/
+go build .
+systemctl restart ComradesTG
+systemctl status ComradesTG
 
 psql -h <REMOTE HOST> -p <REMOTE PORT> -U <DB_USER> <DB_NAME>
 
@@ -432,5 +459,8 @@ systemctl status ComradesTG
 
 
 systemctl status postgres
+
+
+https://t.me/find_comrade_bot?start=ya1
 
 */

@@ -6,3 +6,5 @@ TODO:
 -console logs to file
 
 -double start
+
+prev next limit

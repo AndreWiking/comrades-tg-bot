@@ -7,6 +7,7 @@ const TgApiKey = "7541929739:AAFylnUcAeDvSueJGIGQ5kAfow4nEw7P-Oc"
 const (
 	StartMessage = "Привет! Добро пожаловать в сервис по поиску соседа для совместного съёма жилья.\nМы поможем вам найти идеального соседа для комфортного и дружного проживания."
 
+	StartText         = "/start"
 	FindRoommateBText = "Найти соседа"
 	FillFormBText     = "Заполнить анкету"
 	MyFormBText       = "Моя анкета"
@@ -61,9 +62,6 @@ const (
 Возраст: <b>%s</b>
 Бюджет на квартиру: <b>%d₽</b>
 `
-
-	LimitMatchBudget = 10000000
-	LimitMatchDist   = 10000000.0
 )
 
 var MainKeyKeyboard = tgbotapi.NewReplyKeyboard(
@@ -173,7 +171,7 @@ const (
 	StateFormUnknown UserState = -1
 )
 
-var UserStateName = map[UserState]string{
+var userStateName = map[UserState]string{
 	StateFormFirstName:          "Имя",
 	StateFormLastName:           "Фамилия",
 	StateFormAge:                "Возраст",
@@ -185,15 +183,38 @@ var UserStateName = map[UserState]string{
 	StateFormAboutRoommate:      "О соседе",
 }
 
+type UserUtm int
+
+const (
+	UtmEmpty UserUtm = iota
+	UtmYa1
+)
+
+var userUtmName = map[UserUtm]string{
+	UtmEmpty: "",
+	UtmYa1:   "ya1",
+}
+
+func (u UserUtm) String() string {
+	return userUtmName[u]
+}
+
 func (ss UserState) String() string {
-	return UserStateName[ss]
+	return userStateName[ss]
 }
 
 func DetectUserState(name string) UserState {
-	for s, n := range UserStateName {
+	for s, n := range userStateName {
 		if n == name {
 			return s
 		}
 	}
 	return StateFormUnknown
 }
+
+const (
+	LimitBudget        = 10000000
+	LimitMatchDist     = 10000000.0
+	LimitEnterNamesLen = 127
+	LimitEnterTextLen  = 1027
+)

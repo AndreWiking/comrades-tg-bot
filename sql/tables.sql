@@ -6,8 +6,11 @@ CREATE TABLE TG_Users
     first_name VARCHAR(128),
     last_name  VARCHAR(128),
     state      INT,
-    match_pos  INT
+    match_pos  INT,
+    utm        VARCHAR(128)
 );
+
+-- ALTER TABLE TG_Users ADD utm VARCHAR(128);
 
 DROP TABLE IF EXISTS TG_Form CASCADE;
 CREATE TABLE TG_Form

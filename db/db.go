@@ -71,20 +71,20 @@ func (connection *Connection) IsUserAdded(id int64) (bool, error) {
 	}
 }
 
-func (connection *Connection) AddUser(id int64, username string, first_name string, last_name string) error {
+func (connection *Connection) AddUser(id int64, username string, first_name string, last_name string, utm settings.UserUtm) error {
 
 	added, err := connection.IsUserAdded(id)
 
 	if !added && err == nil {
 		stmt, err := connection.db.Prepare(
-			"INSERT INTO tg_users(id, username, first_name, last_name, state) VALUES( $1, $2, $3, $4, $5)")
+			"INSERT INTO tg_users(id, username, first_name, last_name, state, utm) VALUES( $1, $2, $3, $4, $5, $6)")
 		if err != nil {
 			return err
 		}
 
 		defer stmt.Close()
 
-		if _, err := stmt.Exec(id, username, first_name, last_name, settings.StateMain); err != nil {
+		if _, err := stmt.Exec(id, username, first_name, last_name, settings.StateMain, utm.String()); err != nil {
 			return err
 		}
 
