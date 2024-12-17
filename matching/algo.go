@@ -41,7 +41,7 @@ func Distance(lat1, lon1, lat2, lon2 float64) float64 {
 }
 
 func isMatch(connection db.Connection, post db.PostVK, tgForm db.FormTgUser) (bool, error) {
-	if post.Apartments_location_s == 0 || post.Apartments_location_w == 0 {
+	if post.Apartments_location_s == 0 || post.Apartments_location_w == 0 || post.Apartments_budget == 0 {
 		return false, nil
 	}
 	dist := Distance(post.Apartments_location_s, post.Apartments_location_w, tgForm.Apartments_location_s, tgForm.Apartments_location_w)

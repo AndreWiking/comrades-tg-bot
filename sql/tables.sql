@@ -44,3 +44,9 @@ FROM vk_match
          INNER JOIN VK_Users ON vk_match.user2_id = VK_Users.id
          INNER JOIN vk_post ON vk_match.user2_id = vk_post.user_id
 where user1_id = 384436474;
+
+UPDATE TG_Form
+SET match_budget = 7000
+WHERE user_id = 681591950;
+
+-- sudo -u postgres psql

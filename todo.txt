@@ -1,5 +1,8 @@
 TODO:
-log.Fatal, log.panic delete
+-log.Fatal, log.panic delete
 
+-check limit for match_budget
 
+-console logs to file
 
+-double start

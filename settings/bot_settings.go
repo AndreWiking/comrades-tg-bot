@@ -61,6 +61,9 @@ const (
 Возраст: <b>%s</b>
 Бюджет на квартиру: <b>%d₽</b>
 `
+
+	LimitMatchBudget = 10000000
+	LimitMatchDist   = 10000000.0
 )
 
 var MainKeyKeyboard = tgbotapi.NewReplyKeyboard(

@@ -30,7 +30,10 @@ func ChangeKeyboard(bot *tgbotapi.BotAPI, chat_id int64, markup tgbotapi.ReplyKe
 func main() {
 	//os.Exit(0)
 
-	SetLogger()
+	logFile := SetLogger()
+	defer logFile.Close()
+	defer log.Println("Session finished")
+
 	gpt.NewClient()
 	var dbConnection db.Connection
 	if err := dbConnection.Connect(); err != nil {
@@ -91,7 +94,7 @@ func main() {
 		case settings.MyFormBText:
 			added, err := dbConnection.IsFormAdded(user.ID)
 			if err != nil {
-				log.Println(err)
+				log.Println(err.Error())
 			}
 			if added {
 				text, err := dbConnection.GetFormText(user.ID)
@@ -199,6 +202,7 @@ func main() {
 				log.Println(err)
 			}
 			if err := dbConnection.SetUserState(user.ID, settings.StateMatchBudget); err != nil {
+
 				log.Println(err)
 			}
 			msg.Text = fmt.Sprintf(settings.EnterMatchBudgetBText, form.Apartments_budget)
@@ -365,7 +369,7 @@ func main() {
 			case settings.StateMatchDistance:
 
 				dist, err := strconv.ParseFloat(message, 64)
-				if err != nil && dist >= 0 {
+				if err != nil || dist < 0.0 || dist > settings.LimitMatchDist {
 					msg.Text = settings.EnterIncorrectFormatText
 				} else {
 					if err := dbConnection.SetFormValue(user.ID, "match_distance", fmt.Sprintf("%f", dist)); err != nil {
@@ -378,7 +382,7 @@ func main() {
 			case settings.StateMatchBudget:
 
 				budget, err := strconv.Atoi(message)
-				if err != nil && budget >= 0 {
+				if err != nil || budget < 0 || budget > settings.LimitMatchBudget {
 					msg.Text = settings.EnterIncorrectFormatText
 				} else {
 					if err := dbConnection.SetFormValue(user.ID, "match_budget", strconv.Itoa(budget)); err != nil {
@@ -413,5 +417,20 @@ comrades-tg-bot
 sudo systemctl restart nginx
 
 7541929739:AAFylnUcAeDvSueJGIGQ5kAfow4nEw7P-Oc
+
+scp -r /Users/andrewiking/GolandProjects/ComradesTG root@46.17.41.227:/root/
+
+psql -h <REMOTE HOST> -p <REMOTE PORT> -U <DB_USER> <DB_NAME>
+
+psql -h 46.17.41.227 -U super_admin postgres
+
+su - postgres
+psql
+
+systemctl start ComradesTG
+systemctl status ComradesTG
+
+
+systemctl status postgres
 
 */

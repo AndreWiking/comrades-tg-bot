@@ -13,18 +13,22 @@ import (
 const testID = 863117815
 
 const (
-	host   = "localhost"
-	port   = 5432
-	user   = "super_admin"
-	dbname = "postgres"
+	//host     = "localhost"
+	host     = "46.17.41.227"
+	port     = 5432
+	user     = "super_admin"
+	dbname   = "postgres"
+	password = "gt53_gky94.rtG&xx-rp-ovD"
 )
+
+// game12345678
 
 type Connection struct {
 	db *sql.DB
 }
 
 func (connection *Connection) Connect() error {
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s dbname=%s sslmode=disable", host, port, user, dbname)
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
 
 	var err error
 	connection.db, err = sql.Open("postgres", psqlInfo)
