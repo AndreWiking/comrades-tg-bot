@@ -18,8 +18,16 @@ const (
 	TypePhoto
 )
 
+func SendMessage(bot *tgbotapi.BotAPI, chat_id int64, text string) {
+	msg := tgbotapi.NewMessage(chat_id, text)
+
+	if _, err := bot.Send(msg); err != nil {
+		log.Println(err)
+	}
+}
+
 func ChangeKeyboard(bot *tgbotapi.BotAPI, chat_id int64, markup tgbotapi.ReplyKeyboardMarkup) {
-	msg := tgbotapi.NewMessage(chat_id, settings.FindRoommateMText)
+	msg := tgbotapi.NewMessage(chat_id, "⬇️⬇️⬇️")
 	msg.ReplyMarkup = markup
 
 	if _, err := bot.Send(msg); err != nil {
@@ -121,6 +129,7 @@ func main() {
 				log.Println(err)
 			}
 			if added {
+				SendMessage(bot, chat_id, settings.FindRoommateMText)
 				if err := matching.MatchGreedy(dbConnection, user.ID); err != nil {
 					log.Println(err)
 				}
@@ -129,7 +138,7 @@ func main() {
 					log.Println(err)
 				}
 
-				userVK, err := dbConnection.GetMatchVkUser(user.ID, 0)
+				userVK, haveNext, err := dbConnection.GetMatchVkUser(user.ID, 0)
 				if err != nil {
 					log.Println(err)
 				}
@@ -142,7 +151,12 @@ func main() {
 					photo = tgbotapi.NewPhoto(update.Message.From.ID, url.Media)
 					photo.Caption = db.PrintVkUserForm(userVK)
 					photo.ReplyMarkup = settings.GetMatchInlineKeyboard(userVK.Profile_link, userVK.Post_link)
-					ChangeKeyboard(bot, chat_id, settings.MatchKeyKeyboard)
+
+					if haveNext {
+						ChangeKeyboard(bot, chat_id, settings.MatchKeyboard(settings.MatchKeyboardNoPrev))
+					} else {
+						ChangeKeyboard(bot, chat_id, settings.MatchKeyboard(settings.MatchKeyboardNoPrevNext))
+					}
 				}
 
 			} else {
@@ -159,7 +173,7 @@ func main() {
 				log.Println(err)
 			}
 
-			userVK, err := dbConnection.GetMatchVkUser(user.ID, matchPos)
+			userVK, haveNext, err := dbConnection.GetMatchVkUser(user.ID, matchPos)
 			if err != nil {
 				log.Println(err)
 			}
@@ -169,7 +183,12 @@ func main() {
 			photo = tgbotapi.NewPhoto(update.Message.From.ID, url.Media)
 			photo.Caption = db.PrintVkUserForm(userVK)
 			photo.ReplyMarkup = settings.GetMatchInlineKeyboard(userVK.Profile_link, userVK.Post_link)
-			//ChangeKeyboard(bot, chat_id, matchKeyKeyboard)
+
+			if haveNext {
+				ChangeKeyboard(bot, chat_id, settings.MatchKeyboard(settings.MatchKeyboardNormal))
+			} else {
+				ChangeKeyboard(bot, chat_id, settings.MatchKeyboard(settings.MatchKeyboardNoNext))
+			}
 
 		case settings.PrevBText:
 			matchPos, err := dbConnection.GetUserMatchPos(user.ID)
@@ -184,7 +203,7 @@ func main() {
 				log.Println(err)
 			}
 
-			userVK, err := dbConnection.GetMatchVkUser(user.ID, matchPos)
+			userVK, _, err := dbConnection.GetMatchVkUser(user.ID, matchPos)
 			if err != nil {
 				log.Println(err)
 			}
@@ -194,11 +213,16 @@ func main() {
 			photo = tgbotapi.NewPhoto(update.Message.From.ID, url.Media)
 			photo.Caption = db.PrintVkUserForm(userVK)
 			photo.ReplyMarkup = settings.GetMatchInlineKeyboard(userVK.Profile_link, userVK.Post_link)
-			//ChangeKeyboard(bot, chat_id, matchKeyKeyboard)
+
+			if matchPos > 0 {
+				ChangeKeyboard(bot, chat_id, settings.MatchKeyboard(settings.MatchKeyboardNormal))
+			} else {
+				ChangeKeyboard(bot, chat_id, settings.MatchKeyboard(settings.MatchKeyboardNoPrev))
+			}
 
 		case settings.MenuBText:
 
-			msg.Text = settings.StartMessage
+			msg.Text = settings.MenuMessage
 			msg.ReplyMarkup = settings.MainKeyKeyboard
 			if err := dbConnection.SetUserState(user.ID, settings.StateMain); err != nil {
 				log.Println(err)
@@ -399,7 +423,11 @@ func main() {
 					if err := dbConnection.SetFormValue(user.ID, "match_distance", fmt.Sprintf("%f", dist)); err != nil {
 						log.Println(err)
 					}
-					msg.Text = settings.EnterMatchDistanceSuccessBText
+					form, err := dbConnection.GetForm(user.ID)
+					if err != nil {
+						log.Println(err)
+					}
+					msg.Text = fmt.Sprintf(settings.EnterMatchDistanceSuccessBText, form.Apartments_location, dist)
 					msg.ReplyMarkup = settings.MainKeyKeyboard
 				}
 
@@ -412,7 +440,11 @@ func main() {
 					if err := dbConnection.SetFormValue(user.ID, "match_budget", strconv.Itoa(budget)); err != nil {
 						log.Println(err)
 					}
-					msg.Text = settings.EnterMatchBudgetSuccessBText
+					form, err := dbConnection.GetForm(user.ID)
+					if err != nil {
+						log.Println(err)
+					}
+					msg.Text = fmt.Sprintf(settings.EnterMatchBudgetSuccessBText, form.Apartments_budget, budget)
 					msg.ReplyMarkup = settings.MainKeyKeyboard
 				}
 			}
@@ -434,6 +466,8 @@ func main() {
 }
 
 /*
+
+ssh root@46.17.41.227
 
 systemctl status comrades-tg-bot.service
 systemctl restart comrades-tg-bot.service

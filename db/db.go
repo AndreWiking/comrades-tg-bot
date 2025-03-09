@@ -314,40 +314,41 @@ func (connection *Connection) GetLinkVkUserPost(vk_user_id int) (string, error) 
 	}
 }
 
-func (connection *Connection) GetMatchVkUser(tgUserId int64, matchPos int) (UserVK, error) {
+func (connection *Connection) GetMatchVkUser(tgUserId int64, matchPos int) (UserVK, bool, error) {
 
 	var userVK UserVK
 	stmt, err := connection.db.Prepare(`select vk_user_id from tg_match where tg_user_id = $1`)
 
 	if err != nil {
-		return userVK, err
+		return userVK, false, err
 	}
 
 	defer stmt.Close()
 
 	rows, err := stmt.Query(tgUserId)
 	if err != nil {
-		return userVK, err
+		return userVK, false, err
 	}
 	var vkUserId int
 	for i := 0; i <= matchPos && rows.Next(); i++ {
 		if err := rows.Scan(&vkUserId); err != nil {
-			return userVK, err
+			return userVK, false, err
 		}
 	}
+	haveNext := rows.Next()
 
 	userVK, err = connection.GetVkUser(vkUserId)
 	if err != nil {
-		return userVK, err
+		return userVK, haveNext, err
 	}
 	post, err := connection.GetVkUserPost(vkUserId)
 	if err != nil {
-		return userVK, err
+		return userVK, haveNext, err
 	}
 	userVK.apartments_budget = post.Apartments_budget
 	userVK.Post_link = post.Link
 
-	return userVK, err
+	return userVK, haveNext, nil
 }
 
 type PostVK struct {

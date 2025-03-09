@@ -6,6 +6,7 @@ const TgApiKey = "7541929739:AAFylnUcAeDvSueJGIGQ5kAfow4nEw7P-Oc"
 
 const (
 	StartMessage = "Привет! Добро пожаловать в сервис по поиску соседа для совместного съёма жилья.\nМы поможем вам найти идеального соседа для комфортного и дружного проживания."
+	MenuMessage  = "Мы поможем найти идеального соседа для комфортного и дружного проживания."
 
 	StartText         = "/start"
 	FindRoommateBText = "Найти соседа"
@@ -34,11 +35,11 @@ const (
 	EnterAboutRoommateMText     = "Какие у вас пожелания по соседу?"
 	EnterSuccessFilledMText     = "Анкета успешно заполнена! Можете приступать к поиску соседа."
 
-	EnterMatchDistanceSuccessBText = "Расстояние успешно изменено! Можете приступать к поиску соседа."
-	EnterMatchBudgetSuccessBText   = "Разница в бюджете успешно изменена! Можете приступать к поиску соседа."
-
 	EnterMatchDistanceBText = "Введите приемлемое для вас расстояние(в км)\n\n%s ± __км"
 	EnterMatchBudgetBText   = "Введите приемлемую для вас разницу в бюджете(в ₽)\n\n%d₽ ± __₽"
+
+	EnterMatchDistanceSuccessBText = "Расстояние успешно изменено: %s ± %.1fкм.\nМожете приступать к поиску соседа."
+	EnterMatchBudgetSuccessBText   = "Разница в бюджете успешно изменена: %d₽ ± %d₽.\nМожете приступать к поиску соседа."
 
 	EnterIncorrectFormatText = "Неверный формат, попробуйте ещё раз:"
 
@@ -75,15 +76,56 @@ var MainKeyKeyboard = tgbotapi.NewReplyKeyboard(
 	),
 )
 
-var MatchKeyKeyboard = tgbotapi.NewReplyKeyboard(
-	tgbotapi.NewKeyboardButtonRow(
-		tgbotapi.NewKeyboardButton(PrevBText),
-		tgbotapi.NewKeyboardButton(NextBText),
-	),
-	tgbotapi.NewKeyboardButtonRow(
-		tgbotapi.NewKeyboardButton(MenuBText),
-	),
+type MatchKeyKeyboardType int
+
+const (
+	MatchKeyboardNormal MatchKeyKeyboardType = iota
+	MatchKeyboardNoPrev
+	MatchKeyboardNoNext
+	MatchKeyboardNoPrevNext
 )
+
+func MatchKeyboard(keyboardType MatchKeyKeyboardType) tgbotapi.ReplyKeyboardMarkup {
+
+	switch keyboardType {
+	case MatchKeyboardNormal:
+		return tgbotapi.NewReplyKeyboard(
+			tgbotapi.NewKeyboardButtonRow(
+				tgbotapi.NewKeyboardButton(PrevBText),
+				tgbotapi.NewKeyboardButton(NextBText),
+			),
+			tgbotapi.NewKeyboardButtonRow(
+				tgbotapi.NewKeyboardButton(MenuBText),
+			),
+		)
+	case MatchKeyboardNoPrev:
+		return tgbotapi.NewReplyKeyboard(
+			tgbotapi.NewKeyboardButtonRow(
+				tgbotapi.NewKeyboardButton(NextBText),
+			),
+			tgbotapi.NewKeyboardButtonRow(
+				tgbotapi.NewKeyboardButton(MenuBText),
+			),
+		)
+	case MatchKeyboardNoNext:
+		return tgbotapi.NewReplyKeyboard(
+			tgbotapi.NewKeyboardButtonRow(
+				tgbotapi.NewKeyboardButton(PrevBText),
+			),
+			tgbotapi.NewKeyboardButtonRow(
+				tgbotapi.NewKeyboardButton(MenuBText),
+			),
+		)
+	case MatchKeyboardNoPrevNext:
+		return tgbotapi.NewReplyKeyboard(
+			tgbotapi.NewKeyboardButtonRow(
+				tgbotapi.NewKeyboardButton(MenuBText),
+			),
+		)
+	default:
+		return tgbotapi.NewReplyKeyboard()
+	}
+}
 
 var MatchParamsKeyKeyboard = tgbotapi.NewReplyKeyboard(
 	tgbotapi.NewKeyboardButtonRow(
