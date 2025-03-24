@@ -22,7 +22,7 @@ const (
 )
 
 // game12345678
-
+// todo: fix to pointer
 type Connection struct {
 	db *sql.DB
 }

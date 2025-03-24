@@ -23,7 +23,9 @@ const (
 
 	MatchDistanceBText = "Расстояние поиска"
 	MatchBudgetBText   = "Вилка бюджета"
+	EditFormBText      = "Изменить анкету"
 
+	EditFormMText               = "Выберите поле для изменения"
 	EnterNameMText              = "Введите ваше имя:"
 	EnterLastnameMText          = "Ваша фамилия:"
 	EnterAgeMText               = "Сколько вам лет?"
@@ -133,6 +135,9 @@ var MatchParamsKeyKeyboard = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButton(MatchDistanceBText),
 	),
 	tgbotapi.NewKeyboardButtonRow(
+		tgbotapi.NewKeyboardButton(EditFormBText),
+	),
+	tgbotapi.NewKeyboardButtonRow(
 		tgbotapi.NewKeyboardButton(MenuBText),
 	),
 )
@@ -152,6 +157,9 @@ var EditFromKeyKeyboard = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButton(StateFormApartmentsBudget.String()),
 		tgbotapi.NewKeyboardButton(StateFormAboutUser.String()),
 		tgbotapi.NewKeyboardButton(StateFormAboutRoommate.String()),
+	),
+	tgbotapi.NewKeyboardButtonRow(
+		tgbotapi.NewKeyboardButton(MenuBText),
 	),
 )
 
@@ -210,6 +218,7 @@ const (
 	StateFormAboutRoommate
 	StateMatchDistance
 	StateMatchBudget
+	StateFormEdit
 	StateFormUnknown UserState = -1
 )
 
