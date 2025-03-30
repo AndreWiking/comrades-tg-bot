@@ -358,6 +358,7 @@ type PostVK struct {
 	Apartments_location_w float64
 	Roommate_sex          settings.SexType
 	Link                  string
+	Sex                   settings.SexType
 }
 
 func (connection *Connection) GetVkUserPost(user_id int) (PostVK, error) {
@@ -379,12 +380,17 @@ SELECT user_id, apartments_budget, apartments_location_s, apartments_location_w,
 	return post, err
 }
 
+//select link, vk_users.sex
+//FROM vk_post
+//INNER JOIN VK_Users ON vk_post.user_id = VK_Users.id;
+
 func (connection *Connection) GetAllVkPosts() ([]PostVK, error) {
 
 	var posts []PostVK
 
 	rows, err := connection.db.Query(
-		`SELECT user_id, apartments_budget, apartments_location_s, apartments_location_w, roommate_sex, link FROM VK_Post`)
+		`SELECT user_id, apartments_budget, apartments_location_s, apartments_location_w, roommate_sex, link, vk_users.sex 
+FROM VK_Post INNER JOIN VK_Users ON vk_post.user_id = VK_Users.id`)
 
 	if err != nil {
 		return nil, err
@@ -393,7 +399,7 @@ func (connection *Connection) GetAllVkPosts() ([]PostVK, error) {
 	for rows.Next() {
 		var post PostVK
 		if err := rows.Scan(&post.User_id, &post.Apartments_budget, &post.Apartments_location_s,
-			&post.Apartments_location_w, &post.Roommate_sex, &post.Link); err != nil {
+			&post.Apartments_location_w, &post.Roommate_sex, &post.Link, &post.Sex); err != nil {
 			return posts, err
 		}
 		posts = append(posts, post)

@@ -92,6 +92,7 @@ var AdminKeyKeyboard = tgbotapi.NewReplyKeyboard(
 var AdminBackKeyKeyboard = tgbotapi.NewReplyKeyboard(
 	tgbotapi.NewKeyboardButtonRow(
 		tgbotapi.NewKeyboardButton(AdminPanelText),
+		tgbotapi.NewKeyboardButton(MenuBText),
 	),
 )
 

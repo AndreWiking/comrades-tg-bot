@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 	//"ComradesTG/settings"
 	//"math"
 	//"strconv"
@@ -33,16 +34,12 @@ type matchUser struct {
 	RoommateSex         settings.SexType
 }
 
-func vkPostToMatchUser(connection *db.Connection, post db.PostVK) (matchUser, error) {
-	vkUser, err := connection.GetVkUser(post.User_id)
-	if err != nil {
-		return matchUser{}, err
-	}
+func vkPostToMatchUser(post db.PostVK) (matchUser, error) {
 	return matchUser{
 		ApartmentsBudget:    post.Apartments_budget,
 		ApartmentsLocationS: post.Apartments_location_w,
 		ApartmentsLocationW: post.Apartments_location_w,
-		Sex:                 vkUser.Sex,
+		Sex:                 post.Sex,
 		RoommateSex:         post.Roommate_sex,
 	}, nil
 }
@@ -119,7 +116,7 @@ func MatchGreedy(connection *db.Connection, tgUserId int64) error {
 
 	for _, post := range posts {
 
-		user1, err := vkPostToMatchUser(connection, post)
+		user1, err := vkPostToMatchUser(post)
 		if err != nil {
 			return err
 		}
@@ -143,6 +140,16 @@ func MatchGreedy(connection *db.Connection, tgUserId int64) error {
 	return nil
 }
 
+func comparePostLink(url1 string, url2 string) bool {
+	pattern := "wall-"
+	index1 := strings.Index(url1, pattern)
+	index2 := strings.Index(url2, pattern)
+	if index1 == -1 || index2 == -1 {
+		return false
+	}
+	return url1[index1:] == url2[index2:]
+}
+
 func FindMatchVk(connection *db.Connection, vkPostLink string) ([]db.PostVK, error) {
 
 	posts, err := connection.GetAllVkPosts()
@@ -152,7 +159,7 @@ func FindMatchVk(connection *db.Connection, vkPostLink string) ([]db.PostVK, err
 
 	selectedPost := (*db.PostVK)(nil)
 	for _, post := range posts {
-		if post.Link == vkPostLink {
+		if comparePostLink(post.Link, vkPostLink) {
 			selectedPost = &post
 			break
 		}
@@ -164,12 +171,12 @@ func FindMatchVk(connection *db.Connection, vkPostLink string) ([]db.PostVK, err
 	matchedPosts := make([]db.PostVK, 0)
 	for _, post := range posts {
 
-		user1, err := vkPostToMatchUser(connection, *selectedPost)
+		user1, err := vkPostToMatchUser(*selectedPost)
 		if err != nil {
 			return nil, err
 		}
 
-		user2, err := vkPostToMatchUser(connection, post)
+		user2, err := vkPostToMatchUser(post)
 		if err != nil {
 			return nil, err
 		}
