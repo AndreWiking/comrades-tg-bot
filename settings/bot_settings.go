@@ -1,13 +1,20 @@
 package settings
 
-import tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+import (
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"slices"
+)
+
+const MaxMessageSize = 4096
 
 const TgApiKey = "7541929739:AAFylnUcAeDvSueJGIGQ5kAfow4nEw7P-Oc"
 
 const (
-	StartMessage = "Привет! Добро пожаловать в сервис по поиску соседа для совместного съёма жилья.\nМы поможем вам найти идеального соседа для комфортного и дружного проживания."
-	MenuMessage  = "Мы поможем найти идеального соседа для комфортного и дружного проживания."
+	StartMessage      = "Привет! Добро пожаловать в сервис по поиску соседа для совместного съёма жилья.\nМы поможем вам найти идеального соседа для комфортного и дружного проживания."
+	MenuMessage       = "Мы поможем найти идеального соседа для комфортного и дружного проживания."
+	AdminPanelMessage = "Admin panel"
 
+	AdminPanelText    = "/admin"
 	StartText         = "/start"
 	FindRoommateBText = "Найти соседа"
 	FillFormBText     = "Заполнить анкету"
@@ -20,6 +27,9 @@ const (
 
 	WriteIBText = "Написать"
 	MoreIBText  = "Подробнее"
+
+	AdminFindMatchBText   = "Найти соседа для VK"
+	AdminFindMatchMessage = "Введите url поста пользователя:"
 
 	MatchDistanceBText = "Расстояние поиска"
 	MatchBudgetBText   = "Вилка бюджета"
@@ -48,7 +58,7 @@ const (
 	AboutUsAnswerText = "Мы предоставляем удобную платформу для тех, кто ищет товарища по квартире, чтобы совместно снять жилье и снизить расходы.\nНаша цель — помочь вам найти идеального сожителя, который соответствует вашим предпочтениям и образу жизни."
 
 	NoFormFilledMText = "Сначала необходимо заполнить анкету"
-	NoMatchFound      = "К сожалению, не нашлось ни одного кандидата"
+	NoMatchFound      = "К сожалению, не нашлось ни одного кандидата.\nПоменяйте параметры поиска в анкете и попробуйте ещё раз."
 	FindRoommateMText = "Поиск кандидатов ..."
 
 	MyFormPatternText = `Имя: <b>%s</b>
@@ -65,6 +75,24 @@ const (
 Возраст: <b>%s</b>
 Бюджет на квартиру: <b>%d₽</b>
 `
+)
+
+var adminIDList = []int64{681591950, 7291028590, 959853862}
+
+func IsAdmin(id int64) bool {
+	return slices.Contains(adminIDList, id)
+}
+
+var AdminKeyKeyboard = tgbotapi.NewReplyKeyboard(
+	tgbotapi.NewKeyboardButtonRow(
+		tgbotapi.NewKeyboardButton(AdminFindMatchBText),
+	),
+)
+
+var AdminBackKeyKeyboard = tgbotapi.NewReplyKeyboard(
+	tgbotapi.NewKeyboardButtonRow(
+		tgbotapi.NewKeyboardButton(AdminPanelText),
+	),
 )
 
 var MainKeyKeyboard = tgbotapi.NewReplyKeyboard(
@@ -219,6 +247,7 @@ const (
 	StateMatchDistance
 	StateMatchBudget
 	StateFormEdit
+	StateAdminVkUrlEnter
 	StateFormUnknown UserState = -1
 )
 

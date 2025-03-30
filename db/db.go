@@ -384,7 +384,7 @@ func (connection *Connection) GetAllVkPosts() ([]PostVK, error) {
 	var posts []PostVK
 
 	rows, err := connection.db.Query(
-		`SELECT user_id, apartments_budget, apartments_location_s, apartments_location_w, roommate_sex FROM VK_Post`)
+		`SELECT user_id, apartments_budget, apartments_location_s, apartments_location_w, roommate_sex, link FROM VK_Post`)
 
 	if err != nil {
 		return nil, err
@@ -393,7 +393,7 @@ func (connection *Connection) GetAllVkPosts() ([]PostVK, error) {
 	for rows.Next() {
 		var post PostVK
 		if err := rows.Scan(&post.User_id, &post.Apartments_budget, &post.Apartments_location_s,
-			&post.Apartments_location_w, &post.Roommate_sex); err != nil {
+			&post.Apartments_location_w, &post.Roommate_sex, &post.Link); err != nil {
 			return posts, err
 		}
 		posts = append(posts, post)

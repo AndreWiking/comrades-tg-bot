@@ -3,6 +3,7 @@ package matching
 import (
 	"ComradesTG/db"
 	"ComradesTG/settings"
+	"errors"
 	"fmt"
 	"math"
 	//"ComradesTG/settings"
@@ -19,7 +20,34 @@ import (
 
 // 37.849  55.908515 , 37.543571 : 55.573800 , 37.653483
 
-func Distance(lat1, lon1, lat2, lon2 float64) float64 {
+const (
+	matchDistanceDefault = 2.01
+	matchBudgetDefault   = 5000
+)
+
+type matchUser struct {
+	ApartmentsBudget    int
+	ApartmentsLocationS float64
+	ApartmentsLocationW float64
+	Sex                 settings.SexType
+	RoommateSex         settings.SexType
+}
+
+func vkPostToMatchUser(connection *db.Connection, post db.PostVK) (matchUser, error) {
+	vkUser, err := connection.GetVkUser(post.User_id)
+	if err != nil {
+		return matchUser{}, err
+	}
+	return matchUser{
+		ApartmentsBudget:    post.Apartments_budget,
+		ApartmentsLocationS: post.Apartments_location_w,
+		ApartmentsLocationW: post.Apartments_location_w,
+		Sex:                 vkUser.Sex,
+		RoommateSex:         post.Roommate_sex,
+	}, nil
+}
+
+func distance(lat1, lon1, lat2, lon2 float64) float64 {
 	// Преобразование градусов в радианы
 	lat1 = lat1 * math.Pi / 180
 	lon1 = lon1 * math.Pi / 180
@@ -40,26 +68,40 @@ func Distance(lat1, lon1, lat2, lon2 float64) float64 {
 	return R * c
 }
 
-func isMatch(connection db.Connection, post db.PostVK, tgForm db.FormTgUser) (bool, error) {
-	if post.Apartments_location_s == 0 || post.Apartments_location_w == 0 || post.Apartments_budget == 0 {
-		return false, nil
+//func isMatch(connection *db.Connection, post db.PostVK, tgForm db.FormTgUser) (bool, error) {
+//	if post.Apartments_location_s == 0 || post.Apartments_location_w == 0 || post.Apartments_budget == 0 {
+//		return false, nil
+//	}
+//	dist := distance(post.Apartments_location_s, post.Apartments_location_w, tgForm.Apartments_location_s, tgForm.Apartments_location_w)
+//
+//	budget := math.Abs(float64(post.Apartments_budget-tgForm.Apartments_budget)) <= float64(tgForm.Match_budget)
+//
+//	vkUser, err := connection.GetVkUser(post.User_id)
+//	if err != nil {
+//		return false, err
+//	}
+//
+//	sexMatch := (post.Roommate_sex == tgForm.Sex || post.Roommate_sex == settings.SexUnknown) &&
+//		(tgForm.Roommate_sex == vkUser.Sex || tgForm.Roommate_sex == settings.SexUnknown)
+//
+//	return dist < tgForm.Match_distance && budget && sexMatch, nil
+//}
+
+func isMatch(user1 matchUser, user2 matchUser, matchDistance float64, matchBudget int) bool {
+	if user1.ApartmentsLocationS == 0 || user1.ApartmentsLocationW == 0 || user1.ApartmentsBudget == 0 {
+		return false
 	}
-	dist := Distance(post.Apartments_location_s, post.Apartments_location_w, tgForm.Apartments_location_s, tgForm.Apartments_location_w)
+	dist := distance(user1.ApartmentsLocationS, user1.ApartmentsLocationW, user2.ApartmentsLocationS, user2.ApartmentsLocationW)
 
-	budget := math.Abs(float64(post.Apartments_budget-tgForm.Apartments_budget)) <= float64(tgForm.Match_budget)
+	budget := math.Abs(float64(user1.ApartmentsBudget-user2.ApartmentsBudget)) <= float64(matchBudget)
 
-	vkUser, err := connection.GetVkUser(post.User_id)
-	if err != nil {
-		return false, err
-	}
+	sexMatch := (user1.RoommateSex == user2.Sex || user1.RoommateSex == settings.SexUnknown) &&
+		(user2.RoommateSex == user1.Sex || user2.RoommateSex == settings.SexUnknown)
 
-	sexMatch := (post.Roommate_sex == tgForm.Sex || post.Roommate_sex == settings.SexUnknown) &&
-		(tgForm.Roommate_sex == vkUser.Sex || tgForm.Roommate_sex == settings.SexUnknown)
-
-	return dist < tgForm.Match_distance && budget && sexMatch, nil
+	return dist < matchDistance && budget && sexMatch
 }
 
-func MatchGreedy(connection db.Connection, tgUserId int64) error {
+func MatchGreedy(connection *db.Connection, tgUserId int64) error {
 
 	tgForm, err := connection.GetForm(tgUserId)
 	if err != nil {
@@ -76,11 +118,21 @@ func MatchGreedy(connection db.Connection, tgUserId int64) error {
 	}
 
 	for _, post := range posts {
-		match, err := isMatch(connection, post, tgForm)
+
+		user1, err := vkPostToMatchUser(connection, post)
 		if err != nil {
 			return err
 		}
-		if match {
+
+		user2 := matchUser{
+			ApartmentsBudget:    tgForm.Apartments_budget,
+			ApartmentsLocationS: tgForm.Apartments_location_w,
+			ApartmentsLocationW: tgForm.Apartments_location_w,
+			Sex:                 tgForm.Sex,
+			RoommateSex:         tgForm.Roommate_sex,
+		}
+
+		if isMatch(user1, user2, tgForm.Match_distance, tgForm.Match_budget) {
 			if err := connection.AddTgMatch(tgUserId, post.User_id); err != nil {
 				fmt.Println(err.Error()) // todo: fix
 				//return err
@@ -91,7 +143,46 @@ func MatchGreedy(connection db.Connection, tgUserId int64) error {
 	return nil
 }
 
-//func Distance(post1 db.PostVK, post2 db.PostVK) float64 {
+func FindMatchVk(connection *db.Connection, vkPostLink string) ([]db.PostVK, error) {
+
+	posts, err := connection.GetAllVkPosts()
+	if err != nil {
+		return nil, err
+	}
+
+	selectedPost := (*db.PostVK)(nil)
+	for _, post := range posts {
+		if post.Link == vkPostLink {
+			selectedPost = &post
+			break
+		}
+	}
+	if selectedPost == nil {
+		return nil, errors.New("no post link found")
+	}
+
+	matchedPosts := make([]db.PostVK, 0)
+	for _, post := range posts {
+
+		user1, err := vkPostToMatchUser(connection, *selectedPost)
+		if err != nil {
+			return nil, err
+		}
+
+		user2, err := vkPostToMatchUser(connection, post)
+		if err != nil {
+			return nil, err
+		}
+
+		if isMatch(user1, user2, matchDistanceDefault, matchBudgetDefault) {
+			matchedPosts = append(matchedPosts, post)
+		}
+	}
+
+	return matchedPosts, nil
+}
+
+//func distance(post1 db.PostVK, post2 db.PostVK) float64 {
 //	return math.Sqrt(math.Pow(float64(post1.Apartments_location_s-post2.Apartments_location_s), 2) +
 //		math.Pow(float64(post1.Apartments_location_w-post2.Apartments_location_w), 2))
 //}
@@ -100,7 +191,7 @@ func MatchGreedy(connection db.Connection, tgUserId int64) error {
 //	if post1.Apartments_location_s == 0 || post1.Apartments_location_w == 0 || post2.Apartments_location_s == 0 || post2.Apartments_location_w == 0 {
 //		return false, nil
 //	}
-//	dist := Distance(post1, post2)
+//	dist := distance(post1, post2)
 //
 //	budget := math.Abs(float64(post1.Apartments_budget)-float64(post2.Apartments_budget)) /
 //		(float64(post1.Apartments_budget) + float64(post2.Apartments_budget))

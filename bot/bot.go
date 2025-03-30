@@ -99,6 +99,17 @@ func (b *Bot) RunUpdates() {
 			if err := b.dbConnection.AddUser(user.ID, user.UserName, user.FirstName, user.LastName, settings.UtmEmpty); err != nil {
 				log.Println(err)
 			}
+		case settings.AdminPanelText:
+			if settings.IsAdmin(user.ID) {
+				msg.Text = settings.AdminPanelMessage
+				msg.ReplyMarkup = settings.AdminKeyKeyboard
+			}
+		case settings.AdminFindMatchBText:
+			msg.Text = settings.AdminFindMatchMessage
+			msg.ReplyMarkup = settings.AdminBackKeyKeyboard
+			if err := b.dbConnection.SetUserState(user.ID, settings.StateAdminVkUrlEnter); err != nil {
+				log.Println(err)
+			}
 
 		case settings.FillFormBText:
 			msg.Text = settings.EnterNameMText
@@ -149,7 +160,7 @@ func (b *Bot) RunUpdates() {
 			}
 			if added {
 				SendMessage(b.bot, chat_id, settings.FindRoommateMText)
-				if err := matching.MatchGreedy(*b.dbConnection, user.ID); err != nil {
+				if err := matching.MatchGreedy(b.dbConnection, user.ID); err != nil {
 					log.Println(err)
 				}
 
@@ -481,6 +492,20 @@ func (b *Bot) RunUpdates() {
 					}
 					msg.Text = fmt.Sprintf(settings.EnterMatchBudgetSuccessBText, form.Apartments_budget, budget)
 					msg.ReplyMarkup = settings.MainKeyKeyboard
+				}
+
+			case settings.StateAdminVkUrlEnter:
+				posts, err := matching.FindMatchVk(b.dbConnection, message)
+				if err != nil {
+					msg.Text = "Fail: " + err.Error()
+				} else {
+					msg.Text = "Result:\n"
+					for _, post := range posts {
+						msg.Text += post.Link + "\n"
+					}
+					if len(msg.Text) > settings.MaxMessageSize {
+						msg.Text = msg.Text[:settings.MaxMessageSize]
+					}
 				}
 			}
 		}

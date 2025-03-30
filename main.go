@@ -9,10 +9,8 @@ import (
 )
 
 func workBot() {
-
 	myBot := bot.NewBot()
 	myBot.RunUpdates()
-
 }
 
 func main() {
@@ -44,10 +42,14 @@ sudo systemctl restart nginx
 
 ssh root@46.17.41.227
 scp -r /Users/andrewiking/GolandProjects/ComradesTG root@46.17.41.227:/root/
+cd /root/ComradesTG
 go build .
+systemctl start ComradesTG
 systemctl restart ComradesTG
 systemctl status ComradesTG
 systemctl stop ComradesTG
+sudo systemctl edit --full ComradesTG.service
+sudo systemctl list-units --all --state=inactive start ComradesTG
 
 psql -h <REMOTE HOST> -p <REMOTE PORT> -U <DB_USER> <DB_NAME>
 
