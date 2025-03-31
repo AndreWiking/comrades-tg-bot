@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"sort"
 	"strings"
 	//"ComradesTG/settings"
 	//"math"
@@ -98,6 +99,24 @@ func isMatch(user1 matchUser, user2 matchUser, matchDistance float64, matchBudge
 	return dist < matchDistance && budget && sexMatch
 }
 
+func match(user1 matchUser, user2 matchUser, matchDistance float64, matchBudget int) (bool, float64) {
+	if user1.ApartmentsLocationS == 0 || user1.ApartmentsLocationW == 0 || user1.ApartmentsBudget == 0 {
+		return false, 0
+	}
+	dist := distance(user1.ApartmentsLocationS, user1.ApartmentsLocationW, user2.ApartmentsLocationS, user2.ApartmentsLocationW)
+
+	budget := math.Abs(float64(user1.ApartmentsBudget-user2.ApartmentsBudget)) <= float64(matchBudget)
+
+	sexMatch := (user1.RoommateSex == user2.Sex || user1.RoommateSex == settings.SexUnknown) &&
+		(user2.RoommateSex == user1.Sex || user2.RoommateSex == settings.SexUnknown)
+
+	if dist < matchDistance && budget && sexMatch {
+		return true, dist
+	} else {
+		return false, 0
+	}
+}
+
 func MatchGreedy(connection *db.Connection, tgUserId int64) error {
 
 	tgForm, err := connection.GetForm(tgUserId)
@@ -114,6 +133,7 @@ func MatchGreedy(connection *db.Connection, tgUserId int64) error {
 		return err
 	}
 
+	matchedPairs := make([]pair, 0)
 	for _, post := range posts {
 
 		user1, err := vkPostToMatchUser(post)
@@ -129,16 +149,20 @@ func MatchGreedy(connection *db.Connection, tgUserId int64) error {
 			RoommateSex:         tgForm.Roommate_sex,
 		}
 
-		if isMatch(user1, user2, tgForm.Match_distance, tgForm.Match_budget) {
-			if err := connection.AddTgMatch(tgUserId, post.User_id); err != nil {
-				fmt.Println(err.Error()) // todo: fix
-				//return err
-			}
+		if isMatch, dist := match(user1, user2, tgForm.Match_distance, tgForm.Match_budget); isMatch {
+			matchedPairs = append(matchedPairs, pair{post, dist})
+		}
+	}
+
+	for _, post := range sortPairs(matchedPairs) {
+		if err := connection.AddTgMatch(tgUserId, post.User_id); err != nil {
+			fmt.Println(err.Error()) // todo: fix
+			//return err
 		}
 	}
 
 	return nil
-} //223335659
+}
 
 func comparePostLink(url1 string, url2 string) bool {
 	pattern := "wall-"
@@ -148,6 +172,22 @@ func comparePostLink(url1 string, url2 string) bool {
 		return false
 	}
 	return url1[index1:] == url2[index2:]
+}
+
+type pair struct {
+	post db.PostVK
+	dist float64
+}
+
+func sortPairs(pairs []pair) []db.PostVK {
+	sort.Slice(pairs, func(i, j int) bool {
+		return pairs[i].dist < pairs[j].dist
+	})
+	res := make([]db.PostVK, 0)
+	for _, mPair := range pairs {
+		res = append(res, mPair.post)
+	}
+	return res
 }
 
 func FindMatchVk(connection *db.Connection, vkPostLink string) ([]db.PostVK, error) {
@@ -168,7 +208,7 @@ func FindMatchVk(connection *db.Connection, vkPostLink string) ([]db.PostVK, err
 		return nil, errors.New("no post link found")
 	}
 
-	matchedPosts := make([]db.PostVK, 0)
+	matchedPairs := make([]pair, 0)
 	for _, post := range posts {
 
 		user1, err := vkPostToMatchUser(*selectedPost)
@@ -181,12 +221,12 @@ func FindMatchVk(connection *db.Connection, vkPostLink string) ([]db.PostVK, err
 			return nil, err
 		}
 
-		if isMatch(user1, user2, matchDistanceDefault, matchBudgetDefault) {
-			matchedPosts = append(matchedPosts, post)
+		if isMatch, dist := match(user1, user2, matchDistanceDefault, matchBudgetDefault); isMatch {
+			matchedPairs = append(matchedPairs, pair{post, dist})
 		}
 	}
 
-	return matchedPosts, nil
+	return sortPairs(matchedPairs), nil
 }
 
 //func distance(post1 db.PostVK, post2 db.PostVK) float64 {
