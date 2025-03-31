@@ -15,11 +15,10 @@ import (
 type Bot struct {
 	bot          *tgbotapi.BotAPI
 	dbConnection *db.Connection
+	gpt          *gpt.Client
 }
 
 func NewBot() *Bot {
-
-	gpt.NewClient()
 
 	var dbConnection db.Connection
 	if err := dbConnection.Connect(); err != nil {
@@ -35,7 +34,7 @@ func NewBot() *Bot {
 
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 
-	return &Bot{bot: bot, dbConnection: &dbConnection}
+	return &Bot{bot: bot, dbConnection: &dbConnection, gpt: gpt.NewClient()}
 }
 
 type SendType int
@@ -328,21 +327,7 @@ func (b *Bot) RunUpdates() {
 			msg.Text = fmt.Sprintf(settings.EnterMatchDistanceBText, form.Apartments_location)
 			msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
 
-		//case settings.StateFormFirstName.String():
-		//	state, err := b.dbConnection.GetUserState(user.ID)
-		//	if err != nil {
-		//		log.Println(err)
-		//	}
-		//	if state == settings.StateFormEdit {
-		//
-		//	}
-
 		default:
-			//if state := settings.DetectUserState(message); state != settings.StateFormUnknown {
-			//	if err := b.dbConnection.SetUserState(user.ID, state-1); err != nil {
-			//		log.Println(err)
-			//	}
-			//}
 
 			state, err := b.dbConnection.GetUserState(user.ID)
 			if err != nil {
@@ -453,7 +438,7 @@ func (b *Bot) RunUpdates() {
 
 			case settings.StateFormApartmentsLocation:
 
-				locS, locW, err := gpt.TransformLocation(message)
+				locS, locW, err := b.gpt.TransformLocation(message)
 				if err != nil || len(message) > settings.LimitEnterTextLen {
 					msg.Text = settings.EnterIncorrectFormatText
 				} else {
@@ -559,8 +544,14 @@ func (b *Bot) RunUpdates() {
 						msg.Text = msg.Text[:settings.MaxMessageSize]
 					}
 
-					spamMessage := fmt.Sprintf(settings.SpamMessagePattern, spamMatches.String(), vkId)
-					SendMessage(b.bot, chat_id, spamMessage)
+					botUrl := fmt.Sprintf(settings.BotStartUrlPattern, vkId)
+					for i := 0; i < settings.SpamMessageCount; i++ {
+						if spamMessage, err := b.gpt.GenerateSpamMessage(spamMatches.String(), botUrl); err != nil {
+							log.Println(err)
+						} else {
+							SendMessage(b.bot, chat_id, spamMessage)
+						}
+					}
 				}
 			}
 		}

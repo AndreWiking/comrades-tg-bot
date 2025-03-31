@@ -1,6 +1,7 @@
 package gpt
 
 import (
+	"ComradesTG/settings"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -18,12 +19,13 @@ type Client struct {
 	client *openai.Client
 }
 
-var Connection Client
+//
+//var Connection Client
 
-func NewClient() {
+func NewClient() *Client {
 	config := openai.DefaultConfig(AIkey)
 	config.BaseURL = BaseUrl
-	Connection.client = openai.NewClientWithConfig(config)
+	return &Client{openai.NewClientWithConfig(config)}
 }
 
 func decodeJSONLocation(jsonString string) (float64, float64, error) {
@@ -45,17 +47,17 @@ const locationRequest = `
 Преобразуй местоположение в Москве в координаты. Если дано несколько местоположений, то возьми среднее из них.
 Ответ дай в формате json(без указания json) c ключами latitude и longitude. Местоположение: %s`
 
-func TransformLocation(location string) (float64, float64, error) {
-	ans, err := request(fmt.Sprintf(locationRequest, location))
+func (c *Client) TransformLocation(location string) (float64, float64, error) {
+	ans, err := c.request(fmt.Sprintf(locationRequest, location))
 	if err != nil {
 		return 0, 0, err
 	}
 	return decodeJSONLocation(ans)
 }
 
-func request(content string) (string, error) {
+func (c *Client) request(content string) (string, error) {
 
-	resp, err := Connection.client.CreateChatCompletion(
+	resp, err := c.client.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
 			Model: openai.GPT4oMini,
@@ -78,9 +80,22 @@ func request(content string) (string, error) {
 	return resp.Choices[0].Message.Content, nil
 }
 
-func (connection Client) Test() {
+func (c *Client) GenerateSpamMessage(matches string, botUrl string) (string, error) {
 
-	resp, err := connection.client.CreateChatCompletion(
+	request := "Перепиши текст:\n" + settings.SpamMessagePattern
+
+	if pattern, err := c.request(request); err != nil {
+		return "", err
+	} else {
+		fmt.Println(pattern)
+		return fmt.Sprintf(pattern, "\n"+matches, "\n"+botUrl), nil
+	}
+
+}
+
+func (c *Client) Test() {
+
+	resp, err := c.client.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
 			Model: openai.GPT4oMini,
