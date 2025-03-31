@@ -190,11 +190,11 @@ func sortPairs(pairs []pair) []db.PostVK {
 	return res
 }
 
-func FindMatchVk(connection *db.Connection, vkPostLink string) ([]db.PostVK, error) {
+func FindMatchVk(connection *db.Connection, vkPostLink string) ([]db.PostVK, int, error) {
 
 	posts, err := connection.GetAllVkPosts()
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	selectedPost := (*db.PostVK)(nil)
@@ -205,20 +205,22 @@ func FindMatchVk(connection *db.Connection, vkPostLink string) ([]db.PostVK, err
 		}
 	}
 	if selectedPost == nil {
-		return nil, errors.New("no post link found")
+		return nil, 0, errors.New("no post link found")
 	}
 
 	matchedPairs := make([]pair, 0)
 	for _, post := range posts {
+		if post.User_id == selectedPost.User_id {
+			continue
+		}
 
 		user1, err := vkPostToMatchUser(*selectedPost)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
-
 		user2, err := vkPostToMatchUser(post)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 
 		if isMatch, dist := match(user1, user2, matchDistanceDefault, matchBudgetDefault); isMatch {
@@ -226,7 +228,7 @@ func FindMatchVk(connection *db.Connection, vkPostLink string) ([]db.PostVK, err
 		}
 	}
 
-	return sortPairs(matchedPairs), nil
+	return sortPairs(matchedPairs), selectedPost.User_id, nil
 }
 
 //func distance(post1 db.PostVK, post2 db.PostVK) float64 {

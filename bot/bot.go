@@ -9,6 +9,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
 	"strconv"
+	"strings"
 )
 
 type Bot struct {
@@ -540,17 +541,26 @@ func (b *Bot) RunUpdates() {
 				}
 
 			case settings.StateAdminVkUrlEnter:
-				posts, err := matching.FindMatchVk(b.dbConnection, message)
+				posts, vkId, err := matching.FindMatchVk(b.dbConnection, message)
 				if err != nil {
 					msg.Text = "Fail: " + err.Error()
 				} else {
-					msg.Text = "Result:\n"
-					for _, post := range posts {
-						msg.Text += post.Link + "\n"
+					var matches, spamMatches strings.Builder
+					for i, post := range posts {
+						matches.WriteString(post.Link)
+						matches.WriteString("\n")
+						if i < settings.MaxSpamMessageMatchesCount {
+							spamMatches.WriteString(post.Link)
+							spamMatches.WriteString("\n")
+						}
 					}
+					msg.Text = "Result for " + message + " :\n" + matches.String()
 					if len(msg.Text) > settings.MaxMessageSize {
 						msg.Text = msg.Text[:settings.MaxMessageSize]
 					}
+
+					spamMessage := fmt.Sprintf(settings.SpamMessagePattern, spamMatches.String(), vkId)
+					SendMessage(b.bot, chat_id, spamMessage)
 				}
 			}
 		}
