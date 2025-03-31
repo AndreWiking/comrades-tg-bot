@@ -96,6 +96,21 @@ func (connection *Connection) AddUser(id int64, username string, first_name stri
 	return nil
 }
 
+func (connection *Connection) AddToHistory(user_id int64, state settings.UserState) error {
+	stmt, err := connection.db.Prepare(
+		"INSERT INTO tg_history(user_id, state, description) VALUES( $1, $2, $3 )")
+	if err != nil {
+		return err
+	}
+
+	defer stmt.Close()
+
+	if _, err := stmt.Exec(user_id, state, state.Description()); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (connection *Connection) SetUserState(user_id int64, state settings.UserState) error {
 	stmt, err := connection.db.Prepare(
 		"UPDATE tg_users SET state = $1 WHERE id = $2")
@@ -111,7 +126,7 @@ func (connection *Connection) SetUserState(user_id int64, state settings.UserSta
 
 	fmt.Printf("User %d set state %d\n", user_id, state)
 
-	return nil
+	return connection.AddToHistory(user_id, state)
 }
 
 func (connection *Connection) GetUserState(user_id int64) (settings.UserState, error) {

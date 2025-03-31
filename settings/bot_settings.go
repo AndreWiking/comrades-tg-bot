@@ -264,6 +264,41 @@ var userStateName = map[UserState]string{
 	StateFormAboutRoommate:      "О соседе",
 }
 
+var userStateDesc = map[UserState]string{
+	StateMain:                   "Main",
+	StateFormFirstName:          "Form First Name",
+	StateFormLastName:           "Form Last Name",
+	StateFormSex:                "Form Sex",
+	StateFormAge:                "Form Age",
+	StateFormRoommateSex:        "Form Roommate Sex",
+	StateFormApartmentsBudget:   "Form Apartments Budget",
+	StateFormApartmentsLocation: "Form Apartments Location",
+	StateFormAboutUser:          "Form About User",
+	StateFormAboutRoommate:      "Form About Roommate",
+	StateMatchDistance:          "Match Distance",
+	StateMatchBudget:            "Match Budget",
+	StateFormEdit:               "Form Edit",
+	StateAdminVkUrlEnter:        "Admin Vk Url Enter",
+	StateFormUnknown:            "Form Unknown",
+}
+
+func (us UserState) String() string {
+	return userStateName[us]
+}
+
+func (us UserState) Description() string {
+	return userStateDesc[us]
+}
+
+func DetectUserState(name string) UserState {
+	for s, n := range userStateName {
+		if n == name {
+			return s
+		}
+	}
+	return StateFormUnknown
+}
+
 type UserUtm int
 
 const (
@@ -278,19 +313,6 @@ var userUtmName = map[UserUtm]string{
 
 func (u UserUtm) String() string {
 	return userUtmName[u]
-}
-
-func (ss UserState) String() string {
-	return userStateName[ss]
-}
-
-func DetectUserState(name string) UserState {
-	for s, n := range userStateName {
-		if n == name {
-			return s
-		}
-	}
-	return StateFormUnknown
 }
 
 const (

@@ -26,17 +26,22 @@ CREATE TABLE TG_Form
     apartments_location   VARCHAR(1024),
     apartments_location_s FLOAT,
     apartments_location_w FLOAT,
-    about_user            TEXT DEFAULT '',
-    about_roommate        TEXT DEFAULT '',
+    about_user            TEXT      DEFAULT '',
+    about_roommate        TEXT      DEFAULT '',
     date                  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    match_budget          FLOAT DEFAULT 5000,
-    match_distance        FLOAT DEFAULT 2.0
+    match_budget          FLOAT     DEFAULT 5000,
+    match_distance        FLOAT     DEFAULT 2.0
 );
 
-ALTER TABLE TG_Form
-    ALTER COLUMN date SET DEFAULT now(),
-    ALTER COLUMN about_user SET DEFAULT '',
-    ALTER COLUMN about_roommate SET DEFAULT '';
+DROP TABLE IF EXISTS TG_History CASCADE;
+CREATE TABLE TG_History
+(
+    id          SERIAL PRIMARY KEY,
+    user_id     INT REFERENCES TG_Users (id),
+    state       INT       DEFAULT -1,
+    description VARCHAR(128),
+    date        TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 DROP TABLE IF EXISTS TG_Match CASCADE;
 CREATE TABLE TG_Match
