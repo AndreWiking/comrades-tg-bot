@@ -187,6 +187,24 @@ func (connection *Connection) IsFormAdded(user_id int64) (bool, error) {
 	}
 }
 
+func (connection *Connection) SetFormValue(user_id int64, column string, value string) error {
+	stmt, err := connection.db.Prepare(
+		"UPDATE tg_form SET date = CURRENT_TIMESTAMP, " + column + " = $1 WHERE user_id = $2")
+	if err != nil {
+		return err
+	}
+
+	defer stmt.Close()
+
+	if _, err := stmt.Exec(value, user_id); err != nil {
+		return err
+	}
+
+	fmt.Printf("For user %d set form value %s = %s\n", user_id, column, value)
+
+	return nil
+}
+
 func (connection *Connection) AddForm(user_id int64) error {
 
 	added, err := connection.IsFormAdded(user_id)
@@ -208,25 +226,36 @@ func (connection *Connection) AddForm(user_id int64) error {
 	}
 	if err != nil {
 		return nil
-	}
+	} //todo: understand why
 	return nil
 }
 
-func (connection *Connection) SetFormValue(user_id int64, column string, value string) error {
-	stmt, err := connection.db.Prepare(
-		"UPDATE tg_form SET date = CURRENT_TIMESTAMP, " + column + " = $1 WHERE user_id = $2")
+func (connection *Connection) AddFormFromVk(user_id int64, user UserVK, post PostVK) error {
+
+	added, err := connection.IsFormAdded(user_id)
+
+	if !added && err == nil {
+		stmt, err := connection.db.Prepare(
+			`INSERT INTO tg_form(user_id, first_name, last_name, sex, age, roommate_sex, apartments_budget, 
+                    apartments_location, apartments_location_s, apartments_location_w, about_user, about_roommate)
+VALUES( $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`)
+
+		if err != nil {
+			return err
+		}
+
+		defer stmt.Close()
+
+		if _, err := stmt.Exec(user_id, user.fist_name, user.last_name, user.Sex, user.age, post.Roommate_sex,
+			post.Apartments_budget, "", post.Apartments_location_s, post.Apartments_location_w, "", ""); err != nil {
+			return err
+		} // todo: add apartments_location
+
+		fmt.Printf("(from VK) Form for \"%d\" added\n", user_id)
+	}
 	if err != nil {
-		return err
+		return nil
 	}
-
-	defer stmt.Close()
-
-	if _, err := stmt.Exec(value, user_id); err != nil {
-		return err
-	}
-
-	fmt.Printf("For user %d set form value %s = %s\n", user_id, column, value)
-
 	return nil
 }
 
@@ -422,6 +451,8 @@ SELECT first_name, last_name, Sex, age, photo_link, profile_link FROM vk_users W
 
 	err = stmt.QueryRow(user_id).Scan(&userVK.fist_name, &userVK.last_name, &userVK.Sex,
 		&userVK.age, &userVK.Photo_link, &userVK.Profile_link)
+
+	userVK.Vk_id = user_id
 
 	return userVK, err
 }

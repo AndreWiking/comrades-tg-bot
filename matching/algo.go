@@ -138,7 +138,7 @@ func MatchGreedy(connection *db.Connection, tgUserId int64) error {
 	}
 
 	return nil
-}
+} //223335659
 
 func comparePostLink(url1 string, url2 string) bool {
 	pattern := "wall-"

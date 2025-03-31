@@ -61,6 +61,34 @@ func ChangeKeyboard(bot *tgbotapi.BotAPI, chat_id int64, markup tgbotapi.ReplyKe
 	}
 }
 
+//type FormTgUser struct {
+//	first_name            string
+//	last_name             string
+//	Sex                   settings.SexType
+//	age                   int
+//	Roommate_sex          settings.SexType
+//	Apartments_budget     int
+//	Apartments_location   string
+//	Apartments_location_s float64
+//	Apartments_location_w float64
+//	about_user            string
+//	about_roommate        string
+//	Match_budget          int
+//	Match_distance        float64
+//}
+
+func (b *Bot) addUserFromVk(vkId int, tgId int64) error {
+
+	if vkUser, err := b.dbConnection.GetVkUser(vkId); err != nil {
+		return err
+	} else if post, err := b.dbConnection.GetVkUserPost(vkUser.Vk_id); err != nil {
+		return err
+	} else if err := b.dbConnection.AddFormFromVk(tgId, vkUser, post); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (b *Bot) RunUpdates() {
 	newUpdate := tgbotapi.NewUpdate(0)
 	newUpdate.Timeout = 60
@@ -85,6 +113,23 @@ func (b *Bot) RunUpdates() {
 		//fmt.Println(update.Message.Invoice.StartParameter)
 		fmt.Println(update.Message.Text)
 
+		start := settings.StartText
+		if len(message) > len(start)+1 && message[:len(start)] == start {
+
+			if vkId, err := strconv.Atoi(message[len(start)+1:]); err != nil {
+				log.Println(err)
+			} else {
+				msg.Text = settings.StartMessage
+				msg.ReplyMarkup = settings.MainKeyKeyboard
+				if err := b.dbConnection.AddUser(user.ID, user.UserName, user.FirstName, user.LastName, settings.UtmEmpty); err != nil {
+					log.Println(err)
+				}
+
+				if err := b.addUserFromVk(vkId, user.ID); err != nil {
+					log.Println(err)
+				}
+			}
+		}
 		switch message {
 		case settings.StartText + " " + settings.UtmYa1.String():
 			msg.Text = settings.StartMessage

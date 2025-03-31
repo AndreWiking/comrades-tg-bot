@@ -67,4 +67,5 @@ systemctl status postgres
 
 https://t.me/find_comrade_bot?start=ya1
 
+https://t.me/find_comrade_bot?start=452679095
 */

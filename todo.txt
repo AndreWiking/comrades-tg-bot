@@ -8,3 +8,5 @@ TODO:
 -double start
 
 prev next limit
+
+Solve problem with double user posts: example: https://t.me/find_comrade_bot?start=452679095
