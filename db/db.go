@@ -204,7 +204,7 @@ func (connection *Connection) IsFormAdded(user_id int64) (bool, error) {
 
 func (connection *Connection) SetFormValue(user_id int64, column string, value string) error {
 	stmt, err := connection.db.Prepare(
-		"UPDATE tg_form SET date = CURRENT_TIMESTAMP, " + column + " = $1 WHERE user_id = $2")
+		"UPDATE tg_form SET Date = CURRENT_TIMESTAMP, " + column + " = $1 WHERE user_id = $2")
 	if err != nil {
 		return err
 	}
@@ -403,6 +403,7 @@ type PostVK struct {
 	Roommate_sex          settings.SexType
 	Link                  string
 	Sex                   settings.SexType
+	Date                  string
 }
 
 func (connection *Connection) GetVkUserPost(user_id int) (PostVK, error) {
@@ -410,7 +411,7 @@ func (connection *Connection) GetVkUserPost(user_id int) (PostVK, error) {
 	var post PostVK
 
 	stmt, err := connection.db.Prepare(`
-SELECT user_id, apartments_budget, apartments_location_s, apartments_location_w, roommate_sex, link FROM VK_Post WHERE user_id = $1`)
+SELECT user_id, apartments_budget, apartments_location_s, apartments_location_w, roommate_sex, link, date FROM VK_Post WHERE user_id = $1`)
 
 	if err != nil {
 		return post, err
@@ -419,7 +420,7 @@ SELECT user_id, apartments_budget, apartments_location_s, apartments_location_w,
 	defer stmt.Close()
 
 	err = stmt.QueryRow(user_id).Scan(&post.User_id, &post.Apartments_budget, &post.Apartments_location_s,
-		&post.Apartments_location_w, &post.Roommate_sex, &post.Link)
+		&post.Apartments_location_w, &post.Roommate_sex, &post.Link, &post.Date)
 
 	return post, err
 }
@@ -433,7 +434,7 @@ func (connection *Connection) GetAllVkPosts() ([]PostVK, error) {
 	var posts []PostVK
 
 	rows, err := connection.db.Query(
-		`SELECT user_id, apartments_budget, apartments_location_s, apartments_location_w, roommate_sex, link, vk_users.sex 
+		`SELECT user_id, apartments_budget, apartments_location_s, apartments_location_w, roommate_sex, link, vk_users.sex, date 
 FROM VK_Post INNER JOIN VK_Users ON vk_post.user_id = VK_Users.id`)
 
 	if err != nil {
@@ -443,7 +444,7 @@ FROM VK_Post INNER JOIN VK_Users ON vk_post.user_id = VK_Users.id`)
 	for rows.Next() {
 		var post PostVK
 		if err := rows.Scan(&post.User_id, &post.Apartments_budget, &post.Apartments_location_s,
-			&post.Apartments_location_w, &post.Roommate_sex, &post.Link, &post.Sex); err != nil {
+			&post.Apartments_location_w, &post.Roommate_sex, &post.Link, &post.Sex, &post.Date); err != nil {
 			return posts, err
 		}
 		posts = append(posts, post)

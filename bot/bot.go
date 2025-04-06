@@ -61,22 +61,6 @@ func ChangeKeyboard(bot *tgbotapi.BotAPI, chat_id int64, markup tgbotapi.ReplyKe
 	}
 }
 
-//type FormTgUser struct {
-//	first_name            string
-//	last_name             string
-//	Sex                   settings.SexType
-//	age                   int
-//	Roommate_sex          settings.SexType
-//	Apartments_budget     int
-//	Apartments_location   string
-//	Apartments_location_s float64
-//	Apartments_location_w float64
-//	about_user            string
-//	about_roommate        string
-//	Match_budget          int
-//	Match_distance        float64
-//}
-
 func (b *Bot) addUserFromVk(vkId int, tgId int64) error {
 
 	if vkUser, err := b.dbConnection.GetVkUser(vkId); err != nil {
