@@ -105,7 +105,7 @@ func (b *Bot) RunUpdates() {
 			} else {
 				msg.Text = settings.StartMessage
 				msg.ReplyMarkup = settings.MainKeyKeyboard
-				if err := b.dbConnection.AddUser(user.ID, user.UserName, user.FirstName, user.LastName, settings.UtmEmpty); err != nil {
+				if err := b.dbConnection.AddUser(user.ID, user.UserName, user.FirstName, user.LastName, settings.UtmVKSpam); err != nil {
 					log.Println(err)
 				}
 
@@ -188,6 +188,11 @@ func (b *Bot) RunUpdates() {
 				log.Println(err)
 			}
 			if added {
+
+				if err := b.dbConnection.AddToHistory(user.ID, settings.StateFindRoommate); err != nil {
+					log.Println(err)
+				}
+
 				SendMessage(b.bot, chat_id, settings.FindRoommateMText)
 				if err := matching.MatchGreedy(b.dbConnection, user.ID); err != nil {
 					log.Println(err)
@@ -223,6 +228,11 @@ func (b *Bot) RunUpdates() {
 			}
 
 		case settings.NextBText:
+
+			if err := b.dbConnection.AddToHistory(user.ID, settings.StateNextRoommate); err != nil {
+				log.Println(err)
+			}
+
 			matchPos, err := b.dbConnection.GetUserMatchPos(user.ID)
 			if err != nil {
 				log.Println(err)
@@ -250,6 +260,11 @@ func (b *Bot) RunUpdates() {
 			}
 
 		case settings.PrevBText:
+
+			if err := b.dbConnection.AddToHistory(user.ID, settings.StatePrevRoommate); err != nil {
+				log.Println(err)
+			}
+
 			matchPos, err := b.dbConnection.GetUserMatchPos(user.ID)
 			if err != nil {
 				log.Println(err)

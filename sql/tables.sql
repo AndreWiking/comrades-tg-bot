@@ -63,3 +63,9 @@ SET match_budget = 7000
 WHERE user_id = 681591950;
 
 -- sudo -u postgres psql
+
+
+SELECT tg.username, tg.first_name, tg.last_name, h.description, h.state, h.date
+FROM tg_history as h
+         INNER JOIN tg_users as tg ON h.user_id = tg.id
+ORDER BY h.date DESC

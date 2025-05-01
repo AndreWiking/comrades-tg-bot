@@ -257,6 +257,9 @@ const (
 	StateMatchBudget
 	StateFormEdit
 	StateAdminVkUrlEnter
+	StateFindRoommate
+	StatePrevRoommate
+	StateNextRoommate
 	StateFormUnknown UserState = -1
 )
 
@@ -287,6 +290,9 @@ var userStateDesc = map[UserState]string{
 	StateMatchBudget:            "Match Budget",
 	StateFormEdit:               "Form Edit",
 	StateAdminVkUrlEnter:        "Admin Vk Url Enter",
+	StateFindRoommate:           "Find Roommate",
+	StatePrevRoommate:           "Prev Roommate",
+	StateNextRoommate:           "Next Roommate",
 	StateFormUnknown:            "Form Unknown",
 }
 
@@ -312,11 +318,13 @@ type UserUtm int
 const (
 	UtmEmpty UserUtm = iota
 	UtmYa1
+	UtmVKSpam
 )
 
 var userUtmName = map[UserUtm]string{
-	UtmEmpty: "",
-	UtmYa1:   "ya1",
+	UtmEmpty:  "",
+	UtmYa1:    "ya1",
+	UtmVKSpam: "vk_spam",
 }
 
 func (u UserUtm) String() string {
