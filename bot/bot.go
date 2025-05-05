@@ -74,6 +74,7 @@ func (b *Bot) addUserFromVk(vkId int, tgId int64) error {
 }
 
 func (b *Bot) RunUpdates() {
+
 	newUpdate := tgbotapi.NewUpdate(0)
 	newUpdate.Timeout = 60
 	updates := b.bot.GetUpdatesChan(newUpdate)
@@ -194,7 +195,7 @@ func (b *Bot) RunUpdates() {
 				}
 
 				SendMessage(b.bot, chat_id, settings.FindRoommateMText)
-				if err := matching.MatchGreedy(b.dbConnection, user.ID); err != nil {
+				if err := matching.MatchGreedy(b.dbConnection, b.gpt, user.ID); err != nil {
 					log.Println(err)
 				}
 
@@ -525,7 +526,7 @@ func (b *Bot) RunUpdates() {
 				}
 
 			case settings.StateAdminVkUrlEnter:
-				posts, vkId, err := matching.FindMatchVk(b.dbConnection, message)
+				posts, vkId, err := matching.FindMatchVk(b.dbConnection, b.gpt, message)
 				if err != nil {
 					msg.Text = "Fail: " + err.Error()
 				} else {

@@ -2,6 +2,7 @@ package matching
 
 import (
 	"ComradesTG/db"
+	"ComradesTG/gpt"
 	"ComradesTG/settings"
 	"errors"
 	"fmt"
@@ -101,7 +102,7 @@ func sortPairs(pairs []pair) []db.PostVK {
 	return res
 }
 
-func MatchGreedy(connection *db.Connection, tgUserId int64) error {
+func MatchGreedy(connection *db.Connection, gpt *gpt.Client, tgUserId int64) error {
 
 	tgForm, err := connection.GetForm(tgUserId)
 	if err != nil {
@@ -112,6 +113,7 @@ func MatchGreedy(connection *db.Connection, tgUserId int64) error {
 	if err != nil {
 		return err
 	}
+	gpt.DetectAllPostsType(connection, posts)
 
 	if err := connection.DeleteTgMatch(tgUserId); err != nil {
 		return err
@@ -119,6 +121,10 @@ func MatchGreedy(connection *db.Connection, tgUserId int64) error {
 
 	matchedPairs := make([]pair, 0)
 	for _, post := range posts {
+
+		if post.Type != db.PostVkTypeFindRoommate {
+			continue
+		}
 
 		user1, err := vkPostToMatchUser(post)
 		if err != nil {
@@ -158,12 +164,13 @@ func comparePostLink(url1 string, url2 string) bool {
 	return url1[index1:] == url2[index2:]
 }
 
-func FindMatchVk(connection *db.Connection, vkPostLink string) ([]db.PostVK, int, error) {
+func FindMatchVk(connection *db.Connection, gpt *gpt.Client, vkPostLink string) ([]db.PostVK, int, error) {
 
 	posts, err := connection.GetAllVkPosts()
 	if err != nil {
 		return nil, 0, err
 	}
+	gpt.DetectAllPostsType(connection, posts)
 
 	selectedPost := (*db.PostVK)(nil)
 	for _, post := range posts {
@@ -178,7 +185,7 @@ func FindMatchVk(connection *db.Connection, vkPostLink string) ([]db.PostVK, int
 
 	matchedPairs := make([]pair, 0)
 	for _, post := range posts {
-		if post.User_id == selectedPost.User_id {
+		if post.User_id == selectedPost.User_id || post.Type != db.PostVkTypeFindRoommate {
 			continue
 		}
 

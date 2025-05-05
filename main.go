@@ -56,7 +56,8 @@ psql -h <REMOTE HOST> -p <REMOTE PORT> -U <DB_USER> <DB_NAME>
 psql -h 46.17.41.227 -U super_admin postgres
 
 su - postgres
-psql
+psql -d postgres
+sudo -u postgres psql
 
 systemctl start ComradesTG
 systemctl status ComradesTG

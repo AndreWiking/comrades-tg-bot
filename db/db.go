@@ -395,8 +395,18 @@ func (connection *Connection) GetMatchVkUser(tgUserId int64, matchPos int) (User
 	return userVK, haveNext, nil
 }
 
+type PostVkType int
+
+const (
+	PostVkTypeNotSet PostVkType = iota
+	PostVkTypeFindRoommate
+	PostVkTypeOther
+)
+
 type PostVK struct {
+	Id                    int
 	User_id               int
+	Text                  string
 	Apartments_budget     int
 	Apartments_location_s float64
 	Apartments_location_w float64
@@ -404,6 +414,7 @@ type PostVK struct {
 	Link                  string
 	Sex                   settings.SexType
 	Date                  string
+	Type                  PostVkType
 }
 
 func (connection *Connection) GetVkUserPost(user_id int) (PostVK, error) {
@@ -411,7 +422,7 @@ func (connection *Connection) GetVkUserPost(user_id int) (PostVK, error) {
 	var post PostVK
 
 	stmt, err := connection.db.Prepare(`
-SELECT user_id, apartments_budget, apartments_location_s, apartments_location_w, roommate_sex, link, date FROM VK_Post WHERE user_id = $1`)
+SELECT id, user_id, text, apartments_budget, apartments_location_s, apartments_location_w, roommate_sex, link, date, type FROM VK_Post WHERE user_id = $1`)
 
 	if err != nil {
 		return post, err
@@ -419,8 +430,8 @@ SELECT user_id, apartments_budget, apartments_location_s, apartments_location_w,
 
 	defer stmt.Close()
 
-	err = stmt.QueryRow(user_id).Scan(&post.User_id, &post.Apartments_budget, &post.Apartments_location_s,
-		&post.Apartments_location_w, &post.Roommate_sex, &post.Link, &post.Date)
+	err = stmt.QueryRow(user_id).Scan(&post.Id, &post.User_id, &post.Text, &post.Apartments_budget, &post.Apartments_location_s,
+		&post.Apartments_location_w, &post.Roommate_sex, &post.Link, &post.Date, &post.Type)
 
 	return post, err
 }
@@ -434,7 +445,7 @@ func (connection *Connection) GetAllVkPosts() ([]PostVK, error) {
 	var posts []PostVK
 
 	rows, err := connection.db.Query(
-		`SELECT user_id, apartments_budget, apartments_location_s, apartments_location_w, roommate_sex, link, vk_users.sex, date 
+		`SELECT vk_post.id, user_id, text, apartments_budget, apartments_location_s, apartments_location_w, roommate_sex, link, vk_users.sex, date, type 
 FROM VK_Post INNER JOIN VK_Users ON vk_post.user_id = VK_Users.id`)
 
 	if err != nil {
@@ -443,13 +454,31 @@ FROM VK_Post INNER JOIN VK_Users ON vk_post.user_id = VK_Users.id`)
 
 	for rows.Next() {
 		var post PostVK
-		if err := rows.Scan(&post.User_id, &post.Apartments_budget, &post.Apartments_location_s,
-			&post.Apartments_location_w, &post.Roommate_sex, &post.Link, &post.Sex, &post.Date); err != nil {
+		if err := rows.Scan(&post.Id, &post.User_id, &post.Text, &post.Apartments_budget, &post.Apartments_location_s,
+			&post.Apartments_location_w, &post.Roommate_sex, &post.Link, &post.Sex, &post.Date, &post.Type); err != nil {
 			return posts, err
 		}
 		posts = append(posts, post)
 	}
 	return posts, nil
+}
+
+func (connection *Connection) SetVkPostType(postId int, vkType PostVkType) error {
+	stmt, err := connection.db.Prepare(
+		"UPDATE vk_post SET type = $1 WHERE id = $2")
+	if err != nil {
+		return err
+	}
+
+	defer stmt.Close()
+
+	if _, err := stmt.Exec(vkType, postId); err != nil {
+		return err
+	}
+
+	fmt.Printf("Post %d set type %d\n", postId, vkType)
+
+	return nil
 }
 
 func (connection *Connection) GetVkUser(user_id int) (UserVK, error) {

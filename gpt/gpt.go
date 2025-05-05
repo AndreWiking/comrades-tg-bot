@@ -1,11 +1,13 @@
 package gpt
 
 import (
+	"ComradesTG/db"
 	"ComradesTG/settings"
 	"context"
 	"encoding/json"
 	"fmt"
 	openai "github.com/sashabaranov/go-openai"
+	"log"
 )
 
 const (
@@ -37,7 +39,7 @@ func decodeJSONLocation(jsonString string) (float64, float64, error) {
 	var location Location
 	err := json.Unmarshal([]byte(jsonString), &location)
 	if err != nil {
-		return 0, 0, fmt.Errorf("error unmarshalling JSON: %w", err)
+		return 0, 0, fmt.Errorf("error unmarshalling json: %w", err)
 	}
 
 	return location.Latitude, location.Longitude, nil
@@ -53,6 +55,52 @@ func (c *Client) TransformLocation(location string) (float64, float64, error) {
 		return 0, 0, err
 	}
 	return decodeJSONLocation(ans)
+}
+
+const postTypeRequest = `
+Определи тип объявление, верни true, если это объявление о поиске соседа для совместной аренды квартиры, false иначе.
+Ответ дай в формате json(без указания json) c ключом type.
+Текс объявления: %s`
+
+func (c *Client) detectPostType(text string) (bool, error) {
+	ans, err := c.request(fmt.Sprintf(postTypeRequest, text))
+	if err != nil {
+		return false, err
+	}
+	type postType struct {
+		Type bool `json:"type"`
+	}
+
+	var pType postType
+	if err := json.Unmarshal([]byte(ans), &pType); err != nil {
+		return false, fmt.Errorf("error unmarshalling json: %w", err)
+	}
+
+	return pType.Type, nil
+}
+
+func (c *Client) DetectAllPostsType(connection *db.Connection, posts []db.PostVK) {
+	for _, post := range posts {
+		if post.Type != db.PostVkTypeNotSet {
+			continue
+		}
+		postType, err := c.detectPostType(post.Text)
+		if err != nil {
+			log.Printf(fmt.Errorf("detect post type failed: %w", err).Error())
+			continue
+		}
+		var resType db.PostVkType
+		if postType {
+			resType = db.PostVkTypeFindRoommate
+		} else {
+			resType = db.PostVkTypeOther
+		}
+		post.Type = resType
+		if err := connection.SetVkPostType(post.Id, resType); err != nil {
+			log.Printf(fmt.Errorf("set post type failed: %w", err).Error())
+			continue
+		}
+	}
 }
 
 func (c *Client) request(content string) (string, error) {
