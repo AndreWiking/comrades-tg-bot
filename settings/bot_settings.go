@@ -319,12 +319,14 @@ const (
 	UtmEmpty UserUtm = iota
 	UtmYa1
 	UtmVKSpam
+	UtmVK1
 )
 
 var userUtmName = map[UserUtm]string{
 	UtmEmpty:  "",
 	UtmYa1:    "ya1",
 	UtmVKSpam: "vk_spam",
+	UtmVK1:    "vk1",
 }
 
 func (u UserUtm) String() string {

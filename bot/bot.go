@@ -102,7 +102,7 @@ func (b *Bot) RunUpdates() {
 		if len(message) > len(start)+1 && message[:len(start)] == start {
 
 			if vkId, err := strconv.Atoi(message[len(start)+1:]); err != nil {
-				log.Println(err)
+				log.Println(fmt.Errorf("start vk_id parsing failed: %w", err))
 			} else {
 				msg.Text = settings.StartMessage
 				msg.ReplyMarkup = settings.MainKeyKeyboard
@@ -116,6 +116,13 @@ func (b *Bot) RunUpdates() {
 			}
 		}
 		switch message {
+		case settings.StartText + " " + settings.UtmVK1.String():
+			msg.Text = settings.StartMessage
+			msg.ReplyMarkup = settings.MainKeyKeyboard
+			if err := b.dbConnection.AddUser(user.ID, user.UserName, user.FirstName, user.LastName, settings.UtmYa1); err != nil {
+				log.Println(err)
+			}
+
 		case settings.StartText + " " + settings.UtmYa1.String():
 			msg.Text = settings.StartMessage
 			msg.ReplyMarkup = settings.MainKeyKeyboard
