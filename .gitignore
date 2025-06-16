@@ -1,7 +1,8 @@
 .DS_Store
+.idea/
 /notes.txt
 /logs.txt
 /todo.txt
 /sql/php_tables.sql
-/sql/tables.sql
+/sql/go_tables.sql
 /config.env

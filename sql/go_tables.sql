@@ -1,31 +1,3 @@
-DROP TABLE IF EXISTS VK_Users CASCADE;
-CREATE TABLE VK_Users
-(
-    id             INTEGER PRIMARY KEY,
-    first_name     VARCHAR(128),
-    last_name      VARCHAR(128),
-    sex            INT,
-    age            INT,
-    is_open_direct BOOL,
-    photo_link     VARCHAR(1024),
-    profile_link   VARCHAR(1024)
-);
-
-DROP TABLE IF EXISTS VK_Post CASCADE;
-CREATE TABLE VK_Post
-(
-    id                    INTEGER PRIMARY KEY,
-    user_id               INTEGER REFERENCES VK_Users (id),
-    text                  TEXT,
-    link                  VARCHAR(1024),
-    date                  TIMESTAMP,
-    apartments_budget     INTEGER,
-    apartments_location_s FLOAT,
-    apartments_location_w FLOAT,
-    roommate_sex          INTEGER,
-    type                  INT default 0
-);
-
 DROP TABLE IF EXISTS TG_Users CASCADE;
 CREATE TABLE TG_Users
 (
@@ -37,6 +9,8 @@ CREATE TABLE TG_Users
     match_pos  INT,
     utm        VARCHAR(128)
 );
+
+-- ALTER TABLE TG_Users ADD utm VARCHAR(128);
 
 DROP TABLE IF EXISTS TG_Form CASCADE;
 CREATE TABLE TG_Form
@@ -77,3 +51,27 @@ CREATE TABLE TG_Match
     vk_user_id INT REFERENCES VK_Users (id),
     PRIMARY KEY (tg_user_id, vk_user_id)
 );
+
+select first_name, last_name, sex, age, photo_link, profile_link, apartments_budget
+FROM vk_match
+         INNER JOIN VK_Users ON vk_match.user2_id = VK_Users.id
+         INNER JOIN vk_post ON vk_match.user2_id = vk_post.user_id
+where user1_id = 384436474;
+
+UPDATE TG_Form
+SET match_budget = 7000
+WHERE user_id = 681591950;
+
+-- sudo -u postgres psql
+
+
+SELECT tg.username, tg.first_name, tg.last_name, h.description, h.state, h.date
+FROM tg_history as h
+         INNER JOIN tg_users as tg ON h.user_id = tg.id
+ORDER BY h.date DESC;
+
+
+delete from tg_form where user_id=1100202259;
+delete from tg_history where user_id=1100202259;
+delete from tg_match where tg_user_id=1100202259;
+delete from tg_users where id=1100202259;
