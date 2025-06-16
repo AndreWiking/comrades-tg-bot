@@ -8,6 +8,7 @@ import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -25,7 +26,11 @@ func NewBot() *Bot {
 		log.Panic(err)
 	}
 
-	bot, err := tgbotapi.NewBotAPI(settings.TgApiKey)
+	apiKey, ok := os.LookupEnv(settings.TgApiKeyName)
+	if !ok {
+		log.Fatalf("%s not found in environment variables\n", settings.TgApiKeyName)
+	}
+	bot, err := tgbotapi.NewBotAPI(apiKey)
 	if err != nil {
 		log.Println(err)
 	}
@@ -80,7 +85,8 @@ func (b *Bot) RunUpdates() {
 	updates := b.bot.GetUpdatesChan(newUpdate)
 
 	for update := range updates {
-		if update.Message == nil { // ignore non-Message updates
+		// обработка каждого обновления
+		if update.Message == nil {
 			continue
 		}
 
@@ -116,10 +122,10 @@ func (b *Bot) RunUpdates() {
 			}
 		}
 		switch message {
-		case settings.StartText + " " + settings.UtmVK1.String():
+		case settings.StartText + " " + settings.UtmVk1.String():
 			msg.Text = settings.StartMessage
 			msg.ReplyMarkup = settings.MainKeyKeyboard
-			if err := b.dbConnection.AddUser(user.ID, user.UserName, user.FirstName, user.LastName, settings.UtmYa1); err != nil {
+			if err := b.dbConnection.AddUser(user.ID, user.UserName, user.FirstName, user.LastName, settings.UtmVk1); err != nil {
 				log.Println(err)
 			}
 

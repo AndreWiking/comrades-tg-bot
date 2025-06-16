@@ -68,4 +68,10 @@ WHERE user_id = 681591950;
 SELECT tg.username, tg.first_name, tg.last_name, h.description, h.state, h.date
 FROM tg_history as h
          INNER JOIN tg_users as tg ON h.user_id = tg.id
-ORDER BY h.date DESC
+ORDER BY h.date DESC;
+
+
+delete from tg_form where user_id=1100202259;
+delete from tg_history where user_id=1100202259;
+delete from tg_match where tg_user_id=1100202259;
+delete from tg_users where id=1100202259;

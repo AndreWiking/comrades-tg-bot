@@ -8,10 +8,10 @@ import (
 	"fmt"
 	openai "github.com/sashabaranov/go-openai"
 	"log"
+	"os"
 )
 
 const (
-	AIkey       = "sk-lsQCzJ3tpfnl0Ig0kC1W0k6LL3L2L5P2"
 	BaseUrl     = "https://api.proxyapi.ru/openai/v1"
 	maxTokens   = 1000
 	temperature = 0.8
@@ -21,11 +21,12 @@ type Client struct {
 	client *openai.Client
 }
 
-//
-//var Connection Client
-
 func NewClient() *Client {
-	config := openai.DefaultConfig(AIkey)
+	apiKey, ok := os.LookupEnv(settings.GptApiKeyName)
+	if !ok {
+		log.Fatalf("%s not found in environment variables\n", settings.GptApiKeyName)
+	}
+	config := openai.DefaultConfig(apiKey)
 	config.BaseURL = BaseUrl
 	return &Client{openai.NewClientWithConfig(config)}
 }

@@ -4,6 +4,7 @@ import (
 	"ComradesTG/bot"
 	"ComradesTG/parser/tg"
 	"ComradesTG/settings"
+	"github.com/joho/godotenv"
 	"log"
 	"os"
 )
@@ -11,6 +12,12 @@ import (
 func workBot() {
 	myBot := bot.NewBot()
 	myBot.RunUpdates()
+}
+
+func init() {
+	if err := godotenv.Load(settings.EnvFilePath); err != nil {
+		log.Fatalln("No .env file found")
+	}
 }
 
 func main() {
@@ -28,47 +35,6 @@ func main() {
 	case settings.ProgTypeName[settings.TgParserProgType]:
 		tg.Parse()
 	default:
-		log.Fatal("Unknown prog type:", argsWithoutProg[0])
+		log.Fatalln("Unknown prog type:", argsWithoutProg[0])
 	}
 }
-
-/*
-
-ssh root@46.17.41.227
-
-sudo systemctl restart nginx
-
-7541929739:AAFylnUcAeDvSueJGIGQ5kAfow4nEw7P-Oc
-
-ssh root@46.17.41.227
-scp -r /Users/andrewiking/GolandProjects/ComradesTG root@46.17.41.227:/root/
-cd /root/ComradesTG
-go build .
-systemctl start ComradesTG
-systemctl restart ComradesTG
-systemctl status ComradesTG
-systemctl stop ComradesTG
-sudo systemctl edit --full ComradesTG.service
-sudo systemctl list-units --all --state=inactive start ComradesTG
-
-psql -h <REMOTE HOST> -p <REMOTE PORT> -U <DB_USER> <DB_NAME>
-
-psql -h 46.17.41.227 -U super_admin postgres
-
-su - postgres
-psql -d postgres
-sudo -u postgres psql
-
-systemctl start ComradesTG
-systemctl status ComradesTG
-
-
-systemctl status postgres
-
-
-https://t.me/find_comrade_bot?start=ya1
-
-https://t.me/find_comrade_bot?start=452679095
-
-
-*/

@@ -12,4 +12,10 @@ var ProgTypeName = map[ProgType]string{
 	TgParserProgType: "tg-parser",
 }
 
-const LogFilePath = "logs.txt"
+const (
+	TgApiKeyName  = "TG_API_KEY"
+	GptApiKeyName = "GPT_API_KEY"
+
+	EnvFilePath = "config.env"
+	LogFilePath = "logs.txt"
+)

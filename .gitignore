@@ -1,0 +1,7 @@
+.DS_Store
+/notes.txt
+/logs.txt
+/todo.txt
+/sql/php_tables.sql
+/sql/tables.sql
+/config.env

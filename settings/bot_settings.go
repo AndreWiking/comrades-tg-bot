@@ -7,8 +7,6 @@ import (
 
 const MaxMessageSize = 4096
 
-const TgApiKey = "7541929739:AAFylnUcAeDvSueJGIGQ5kAfow4nEw7P-Oc"
-
 const (
 	StartMessage      = "Привет! Добро пожаловать в сервис по поиску соседа для совместного съёма жилья.\nМы поможем вам найти идеального соседа для комфортного и дружного проживания."
 	MenuMessage       = "Мы поможем найти идеального соседа для комфортного и дружного проживания."
@@ -319,14 +317,14 @@ const (
 	UtmEmpty UserUtm = iota
 	UtmYa1
 	UtmVKSpam
-	UtmVK1
+	UtmVk1
 )
 
 var userUtmName = map[UserUtm]string{
 	UtmEmpty:  "",
 	UtmYa1:    "ya1",
 	UtmVKSpam: "vk_spam",
-	UtmVK1:    "vk1",
+	UtmVk1:    "vk1",
 }
 
 func (u UserUtm) String() string {
